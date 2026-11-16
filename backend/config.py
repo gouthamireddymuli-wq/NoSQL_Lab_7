@@ -1,6 +1,7 @@
 """
 MongoDB connection configuration for the CTI Platform.
 """
+import os
 from pymongo import MongoClient, ASCENDING, TEXT
 from bson import ObjectId
 import datetime
@@ -8,7 +9,8 @@ import datetime
 # ---------------------------------------------------------------------------
 # Connection
 # ---------------------------------------------------------------------------
-client = MongoClient("mongodb://localhost:27017/")
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
+client = MongoClient(MONGO_URI)
 db = client["cti_platform"]
 
 # ---------------------------------------------------------------------------

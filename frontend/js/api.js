@@ -3,7 +3,7 @@
  * All fetch calls to the Flask backend at http://localhost:5000/api
  */
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = window.location.protocol.startsWith('http') ? '/api' : 'http://localhost:5000/api';
 
 /** Generic request helper */
 async function apiRequest(path, options = {}) {

@@ -5,6 +5,7 @@ Run with:
     C:\\Users\\gouth\\AppData\\Local\\Programs\\Python\\Python313\\python.exe seed_data.py
 """
 import sys
+import os
 import datetime
 import random
 from pymongo import MongoClient, ASCENDING, TEXT
@@ -12,7 +13,8 @@ from pymongo import MongoClient, ASCENDING, TEXT
 # ---------------------------------------------------------------------------
 # Connection
 # ---------------------------------------------------------------------------
-client = MongoClient("mongodb://localhost:27017/")
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
+client = MongoClient(MONGO_URI)
 db = client["cti_platform"]
 
 indicators_col = db["indicators"]

@@ -12,7 +12,16 @@ from routes.actors import actors_bp
 from routes.analytics import analytics_bp
 from routes.monitor import monitor_bp
 
-FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+# Auto-detect frontend directory whether running from root, backend/, or Vercel
+local_frontend = os.path.abspath(os.path.join(os.path.dirname(__file__), "frontend"))
+parent_frontend = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+
+if os.path.exists(local_frontend):
+    FRONTEND_DIR = local_frontend
+elif os.path.exists(parent_frontend):
+    FRONTEND_DIR = parent_frontend
+else:
+    FRONTEND_DIR = os.path.dirname(__file__)
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
 CORS(app)  # allow all origins (dev-friendly)

@@ -25,19 +25,22 @@ feed_sources_col = db["feed_sources"]
 # Indexes (idempotent – safe to call on every startup)
 # ---------------------------------------------------------------------------
 def ensure_indexes():
-    # Compound: type + value  (frequently filtered together)
-    indicators_col.create_index([("type", ASCENDING), ("value", ASCENDING)])
-    # Compound: status + severity  (dashboard queries)
-    indicators_col.create_index([("status", ASCENDING), ("severity", ASCENDING)])
-    # Full-text search on value, tags and threat_types
-    indicators_col.create_index(
-        [("value", TEXT), ("tags", TEXT), ("threat_types", TEXT)],
-        name="indicators_text"
-    )
-    # Actors by actor_id
-    threat_actors_col.create_index([("actor_id", ASCENDING)], unique=True)
-    # Reports by report_id
-    reports_col.create_index([("report_id", ASCENDING)], unique=True)
+    try:
+        # Compound: type + value  (frequently filtered together)
+        indicators_col.create_index([("type", ASCENDING), ("value", ASCENDING)])
+        # Compound: status + severity  (dashboard queries)
+        indicators_col.create_index([("status", ASCENDING), ("severity", ASCENDING)])
+        # Full-text search on value, tags and threat_types
+        indicators_col.create_index(
+            [("value", TEXT), ("tags", TEXT), ("threat_types", TEXT)],
+            name="indicators_text"
+        )
+        # Actors by actor_id
+        threat_actors_col.create_index([("actor_id", ASCENDING)], unique=True)
+        # Reports by report_id
+        reports_col.create_index([("report_id", ASCENDING)], unique=True)
+    except Exception as e:
+        print("Note: ensure_indexes deferred:", e)
 
 # ---------------------------------------------------------------------------
 # JSON serialisation helpers

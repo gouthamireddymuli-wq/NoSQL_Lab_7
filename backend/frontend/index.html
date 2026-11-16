@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CTI Platform — Dashboard</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="navbar-brand">
+    <i class="fas fa-shield-virus"></i>
+    CTI Platform
+    <span class="brand-dot"></span>
+  </div>
+  <ul class="navbar-nav">
+    <li><a href="index.html" class="active"><i class="fas fa-th-large"></i> Dashboard</a></li>
+    <li><a href="indicators.html"><i class="fas fa-crosshairs"></i> Threat Indicators</a></li>
+    <li><a href="reports.html"><i class="fas fa-file-alt"></i> Reports</a></li>
+    <li><a href="actors.html"><i class="fas fa-user-secret"></i> Threat Actors</a></li>
+    <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+    <li><a href="lab_reports.html"><i class="fas fa-flask"></i> Lab Reports</a></li>
+  </ul>
+  <div class="navbar-status">
+    <div class="status-indicator"></div>
+    <span>Live</span>
+  </div>
+</nav>
+
+<!-- ── Page ───────────────────────────────────────────────── -->
+<div class="page-wrapper">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title"><i class="fas fa-th-large"></i> Dashboard</h1>
+      <p class="page-subtitle">Cyber Threat Intelligence Overview</p>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="initDashboard()">
+      <i class="fas fa-sync-alt"></i> Refresh
+    </button>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-icon"><i class="fas fa-crosshairs"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" id="stat-total">—</div>
+        <div class="stat-label">Total Indicators</div>
+      </div>
+    </div>
+    <div class="stat-card stat-green">
+      <div class="stat-icon"><i class="fas fa-bolt"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" id="stat-active">—</div>
+        <div class="stat-label">Active Threats</div>
+      </div>
+    </div>
+    <div class="stat-card stat-red">
+      <div class="stat-icon"><i class="fas fa-skull-crossbones"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" id="stat-critical">—</div>
+        <div class="stat-label">Critical Severity</div>
+      </div>
+    </div>
+    <div class="stat-card stat-purple">
+      <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" id="stat-reports">—</div>
+        <div class="stat-label">Reports</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="grid-2" style="margin-bottom:1.5rem;">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title"><i class="fas fa-chart-pie"></i> Indicators by Type</span>
+      </div>
+      <div class="chart-container" style="height:260px;">
+        <canvas id="chart-type"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title"><i class="fas fa-chart-bar"></i> Indicators by Severity</span>
+      </div>
+      <div class="chart-container" style="height:260px;">
+        <canvas id="chart-severity"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Indicators -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-list"></i> Recent Indicators</span>
+      <a href="indicators.html" class="btn btn-ghost btn-sm">View All</a>
+    </div>
+    <div id="recent-indicators"></div>
+  </div>
+
+  <!-- Recent Reports -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i class="fas fa-newspaper"></i> Recent Reports</span>
+      <a href="reports.html" class="btn btn-ghost btn-sm">View All</a>
+    </div>
+    <div id="recent-reports"></div>
+  </div>
+
+</div>
+
+<!-- Modal Shell -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title"></span>
+      <button class="modal-close" onclick="hideModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body"></div>
+    <div class="modal-footer"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module" src="js/dashboard.js"></script>
+<script>
+  // Expose hideModal globally for onclick attributes
+  function hideModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function initDashboard() {
+    // Will be replaced by module re-init; just reload page
+    window.location.reload();
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CTI Platform — Threat Reports</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="navbar">
+  <div class="navbar-brand">
+    <i class="fas fa-shield-virus"></i>
+    CTI Platform
+    <span class="brand-dot"></span>
+  </div>
+  <ul class="navbar-nav">
+    <li><a href="index.html"><i class="fas fa-th-large"></i> Dashboard</a></li>
+    <li><a href="indicators.html"><i class="fas fa-crosshairs"></i> Threat Indicators</a></li>
+    <li><a href="reports.html" class="active"><i class="fas fa-file-alt"></i> Reports</a></li>
+    <li><a href="actors.html"><i class="fas fa-user-secret"></i> Threat Actors</a></li>
+    <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+    <li><a href="lab_reports.html"><i class="fas fa-flask"></i> Lab Reports</a></li>
+  </ul>
+  <div class="navbar-status">
+    <div class="status-indicator"></div>
+    <span>Live</span>
+  </div>
+</nav>
+
+<!-- Page Content -->
+<div class="page-wrapper">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title"><i class="fas fa-newspaper"></i> Threat Intelligence Reports</h1>
+      <p class="page-subtitle">Security advisories, campaign bulletins, and breach analyses ingested from CTI Digest (https://ctidigest.com/)</p>
+    </div>
+    <div style="display:flex;gap:0.75rem;">
+      <button class="btn btn-primary" onclick="openAddReportModal()">
+        <i class="fas fa-plus"></i> Ingest Report
+      </button>
+      <button class="btn btn-outline" onclick="loadReports()">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Search & Filter Toolbar -->
+  <div class="card" style="margin-bottom:1.5rem;padding:1rem 1.25rem;">
+    <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between;">
+      <div style="position:relative;flex:1;min-width:280px;">
+        <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);"></i>
+        <input type="text" id="report-search" class="form-control" placeholder="Search report title, summary keywords, APT actor, or tags..." style="padding-left:36px;width:100%;" />
+      </div>
+      <div style="display:flex;gap:0.5rem;align-items:center;">
+        <span style="font-size:0.8rem;color:var(--text-muted);">TLP Filter:</span>
+        <button class="btn btn-ghost btn-sm tlp-filter-btn" data-tlp="" onclick="filterTLP('')">All</button>
+        <button class="btn btn-ghost btn-sm tlp-filter-btn" data-tlp="white" onclick="filterTLP('white')">White</button>
+        <button class="btn btn-ghost btn-sm tlp-filter-btn" data-tlp="green" onclick="filterTLP('green')">Green</button>
+        <button class="btn btn-ghost btn-sm tlp-filter-btn" data-tlp="amber" onclick="filterTLP('amber')">Amber</button>
+        <button class="btn btn-ghost btn-sm tlp-filter-btn" data-tlp="red" onclick="filterTLP('red')">Red</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reports Grid Container -->
+  <div id="reports-container">
+    <div class="loading-state"><div class="spinner"></div><p>Loading threat reports...</p></div>
+  </div>
+
+</div>
+
+<!-- Modal Shell -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" style="max-width:800px;">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Threat Report Details</span>
+      <button class="modal-close" onclick="hideModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+  import { fetchReports, fetchReport, createReport } from './js/api.js';
+  import { severityBadge, tlpBadge, formatDate, showToast, truncate, escHtml, typeBadge } from './js/utils.js';
+
+  let allReports = [];
+  let selectedTLP = '';
+
+  window.loadReports = async function() {
+    const container = document.getElementById('reports-container');
+    container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Loading threat reports...</p></div>';
+
+    const search = document.getElementById('report-search').value.trim();
+
+    try {
+      const res = await fetchReports({ search });
+      const reports = Array.isArray(res) ? res : (res.reports || res.data || []);
+      allReports = reports;
+
+      renderFilteredReports();
+    } catch (err) {
+      container.innerHTML = `<div class="error-state"><i class="fas fa-exclamation-triangle"></i> Failed to load reports: ${err.message}</div>`;
+      showToast(`Error: ${err.message}`, 'error');
+    }
+  };
+
+  window.filterTLP = function(tlp) {
+    selectedTLP = tlp;
+    document.querySelectorAll('.tlp-filter-btn').forEach(b => {
+      if (b.getAttribute('data-tlp') === tlp) {
+        b.classList.add('btn-primary');
+        b.classList.remove('btn-ghost');
+      } else {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-ghost');
+      }
+    });
+    renderFilteredReports();
+  };
+
+  function renderFilteredReports() {
+    const container = document.getElementById('reports-container');
+    let filtered = allReports;
+    if (selectedTLP) {
+      filtered = filtered.filter(r => (r.tlp || '').toLowerCase() === selectedTLP.toLowerCase());
+    }
+
+    if (!filtered.length) {
+      container.innerHTML = `
+        <div class="card empty-state" style="padding:3rem 1rem;text-align:center;">
+          <i class="fas fa-file-search" style="font-size:2.5rem;color:var(--text-muted);margin-bottom:1rem;"></i>
+          <p style="color:var(--text-muted);font-size:1rem;">No reports match your search criteria.</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(420px, 1fr));gap:1.25rem;">
+        ${filtered.map(r => `
+          <div class="card report-card" onclick="window.viewReport('${r._id}')" style="cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;">
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.75rem;">
+                <div style="display:flex;align-items:center;gap:0.4rem;">
+                  ${severityBadge(r.severity)}
+                  ${tlpBadge(r.tlp)}
+                </div>
+                <span style="font-size:0.75rem;color:var(--text-muted);">
+                  <i class="fas fa-calendar-alt"></i> ${formatDate(r.published_date)}
+                </span>
+              </div>
+
+              <h3 style="font-size:1rem;font-weight:600;color:var(--text-primary);margin-bottom:0.5rem;line-height:1.4;">
+                ${escHtml(r.title)}
+              </h3>
+
+              <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.5;">
+                ${escHtml(truncate(r.summary, 160))}
+              </p>
+            </div>
+
+            <div>
+              <div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-bottom:0.75rem;">
+                ${(r.tags || []).map(t => `<span class="badge badge-type" style="font-size:0.65rem;">#${escHtml(t)}</span>`).join('')}
+              </div>
+
+              <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--card-border);padding-top:0.75rem;font-size:0.75rem;color:var(--text-muted);">
+                <span><i class="fas fa-user-edit"></i> ${escHtml(r.author || 'CTI Digest')}</span>
+                <span><i class="fas fa-link"></i> ${(r.related_indicators || []).length} Referenced IoCs</span>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+  }
+
+  // View Detailed Report Modal (Demonstrates Reference Resolution)
+  window.viewReport = async function(id) {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    const footerEl = document.getElementById('modal-footer');
+
+    titleEl.innerHTML = `<i class="fas fa-file-alt"></i> Threat Intelligence Advisory`;
+    bodyEl.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Fetching report & resolving referenced IoCs...</p></div>`;
+    footerEl.innerHTML = `<button class="btn btn-ghost" onclick="hideModal()">Close</button>`;
+    overlay.classList.add('open');
+
+    try {
+      const rep = await fetchReport(id);
+
+      const indicatorsList = rep.related_indicators_enriched || [];
+      const indicatorsHtml = indicatorsList.length ? `
+        <div style="margin-top:1.25rem;">
+          <h4 style="font-size:0.85rem;color:var(--accent-cyan);text-transform:uppercase;margin-bottom:0.5rem;display:flex;align-items:center;justify-content:space-between;">
+            <span><i class="fas fa-crosshairs"></i> Associated IoCs (Referencing Resolution via $lookup / Query)</span>
+            <span class="badge badge-info">${indicatorsList.length} linked</span>
+          </h4>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Observable Value</th>
+                  <th>Severity</th>
+                  <th>Status</th>
+                  <th>Confidence</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${indicatorsList.map(ind => `
+                  <tr>
+                    <td>${typeBadge(ind.type)}</td>
+                    <td class="td-mono">${escHtml(ind.value || ind.indicator_id)}</td>
+                    <td>${severityBadge(ind.severity)}</td>
+                    <td><span class="badge badge-active">${ind.status || 'active'}</span></td>
+                    <td>${ind.confidence ?? 85}%</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ` : `<p style="font-size:0.8rem;color:var(--text-muted);margin-top:1rem;">No specific IoCs referenced in this bulletin.</p>`;
+
+      bodyEl.innerHTML = `
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.75rem;">
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              ${severityBadge(rep.severity)}
+              ${tlpBadge(rep.tlp)}
+            </div>
+            <span style="font-size:0.8rem;color:var(--text-muted);"><i class="fas fa-calendar"></i> ${formatDate(rep.published_date)}</span>
+          </div>
+
+          <h2 style="font-size:1.25rem;font-weight:700;color:var(--text-primary);margin-bottom:0.75rem;">
+            ${escHtml(rep.title)}
+          </h2>
+
+          <div style="background:rgba(0,0,0,0.25);border:1px solid var(--card-border);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem;font-size:0.9rem;line-height:1.6;color:#cbd5e1;">
+            ${escHtml(rep.summary)}
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;font-size:0.8rem;background:rgba(255,255,255,0.02);padding:0.75rem;border-radius:var(--radius-sm);">
+            <div><span style="color:var(--text-muted);">Author:</span> <strong>${escHtml(rep.author || 'CTI Digest')}</strong></div>
+            <div><span style="color:var(--text-muted);">Source URL:</span> <a href="${escHtml(rep.source_url || 'https://ctidigest.com')}" target="_blank" rel="noopener">${escHtml(rep.source_url || 'ctidigest.com')}</a></div>
+            <div><span style="color:var(--text-muted);">Report ID:</span> <span style="font-family:var(--font-mono);">${escHtml(rep.report_id || rep._id)}</span></div>
+            <div><span style="color:var(--text-muted);">Schema Relationship:</span> <strong style="color:var(--accent-amber);">Referenced related_indicators[]</strong></div>
+          </div>
+
+          ${indicatorsHtml}
+        </div>`;
+
+      footerEl.innerHTML = `
+        <a href="${escHtml(rep.source_url || 'https://ctidigest.com')}" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-external-link-alt"></i> Open Source</a>
+        <button class="btn btn-ghost btn-sm" onclick="hideModal()">Close</button>`;
+    } catch (err) {
+      bodyEl.innerHTML = `<div class="error-state">Failed to load report: ${err.message}</div>`;
+    }
+  };
+
+  // Add Report Modal
+  window.openAddReportModal = function() {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    const footerEl = document.getElementById('modal-footer');
+
+    titleEl.innerHTML = `<i class="fas fa-file-plus"></i> Ingest New Threat Intelligence Report`;
+    bodyEl.innerHTML = `
+      <form id="add-report-form" style="display:flex;flex-direction:column;gap:1rem;">
+        <div>
+          <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Report Title *</label>
+          <input type="text" id="new-rep-title" class="form-control" placeholder="e.g. Cobalt Strike Beacon Infrastructure Detected" required style="width:100%;" />
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Severity *</label>
+            <select id="new-rep-severity" class="form-control" required style="width:100%;">
+              <option value="critical">Critical</option>
+              <option value="high" selected>High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">TLP Classification *</label>
+            <select id="new-rep-tlp" class="form-control" required style="width:100%;">
+              <option value="white">TLP:WHITE (Public)</option>
+              <option value="green">TLP:GREEN (Community)</option>
+              <option value="amber" selected>TLP:AMBER (Restricted)</option>
+              <option value="red">TLP:RED (Strictly Confidential)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Executive Summary *</label>
+          <textarea id="new-rep-summary" class="form-control" rows="4" placeholder="Detailed threat assessment and impact summary..." required style="width:100%;"></textarea>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Source URL</label>
+            <input type="url" id="new-rep-url" class="form-control" value="https://ctidigest.com/reports/" style="width:100%;" />
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Author / Research Team</label>
+            <input type="text" id="new-rep-author" class="form-control" value="SOC Threat Desk" style="width:100%;" />
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Tags (comma-separated)</label>
+          <input type="text" id="new-rep-tags" class="form-control" placeholder="c2, ransomware, apt" style="width:100%;" />
+        </div>
+      </form>`;
+
+    footerEl.innerHTML = `
+      <button class="btn btn-primary" onclick="window.submitNewReport()"><i class="fas fa-check"></i> Ingest Report</button>
+      <button class="btn btn-ghost" onclick="hideModal()">Cancel</button>`;
+
+    overlay.classList.add('open');
+  };
+
+  window.submitNewReport = async function() {
+    const title = document.getElementById('new-rep-title').value.trim();
+    const summary = document.getElementById('new-rep-summary').value.trim();
+    if (!title || !summary) {
+      showToast('Title and summary are required', 'error');
+      return;
+    }
+
+    const severity = document.getElementById('new-rep-severity').value;
+    const tlp = document.getElementById('new-rep-tlp').value;
+    const source_url = document.getElementById('new-rep-url').value.trim();
+    const author = document.getElementById('new-rep-author').value.trim();
+    const tags = document.getElementById('new-rep-tags').value.split(',').map(s => s.trim()).filter(Boolean);
+
+    const newDoc = {
+      report_id: `rpt-user-${Date.now().toString().slice(-4)}`,
+      title,
+      summary,
+      severity,
+      tlp,
+      source_url,
+      author,
+      published_date: new Date().toISOString(),
+      tags: tags.length ? tags : ['manual-import'],
+      related_indicators: ['ind-001', 'ind-006'] // Link to top critical threats
+    };
+
+    try {
+      await createReport(newDoc);
+      showToast('Report ingested successfully!', 'success');
+      hideModal();
+      window.loadReports();
+    } catch (err) {
+      showToast(`Ingestion failed: ${err.message}`, 'error');
+    }
+  };
+
+  // Search debounce
+  document.getElementById('report-search').addEventListener('input', () => {
+    clearTimeout(window._repSearchTimer);
+    window._repSearchTimer = setTimeout(window.loadReports, 300);
+  });
+
+  // Initial load
+  window.loadReports();
+</script>
+
+<script>
+  function hideModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+</script>
+</body>
+</html>

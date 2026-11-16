@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CTI Platform — Threat Indicators</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="navbar">
+  <div class="navbar-brand">
+    <i class="fas fa-shield-virus"></i>
+    CTI Platform
+    <span class="brand-dot"></span>
+  </div>
+  <ul class="navbar-nav">
+    <li><a href="index.html"><i class="fas fa-th-large"></i> Dashboard</a></li>
+    <li><a href="indicators.html" class="active"><i class="fas fa-crosshairs"></i> Threat Indicators</a></li>
+    <li><a href="reports.html"><i class="fas fa-file-alt"></i> Reports</a></li>
+    <li><a href="actors.html"><i class="fas fa-user-secret"></i> Threat Actors</a></li>
+    <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+    <li><a href="lab_reports.html"><i class="fas fa-flask"></i> Lab Reports</a></li>
+  </ul>
+  <div class="navbar-status">
+    <div class="status-indicator"></div>
+    <span>Live</span>
+  </div>
+</nav>
+
+<!-- Page Content -->
+<div class="page-wrapper">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title"><i class="fas fa-crosshairs"></i> Threat Indicators (IoCs)</h1>
+      <p class="page-subtitle">Manage, classify, search, and analyze Indicators of Compromise from global intelligence feeds</p>
+    </div>
+    <div style="display:flex;gap:0.75rem;">
+      <button class="btn btn-primary" onclick="openAddModal()">
+        <i class="fas fa-plus"></i> Add Indicator
+      </button>
+      <button class="btn btn-outline" onclick="loadIndicators()">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters & Search Toolbar -->
+  <div class="card" style="margin-bottom:1.5rem;padding:1rem 1.25rem;">
+    <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between;">
+      
+      <!-- Search Input -->
+      <div style="position:relative;flex:1;min-width:260px;">
+        <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);"></i>
+        <input type="text" id="filter-search" class="form-control" placeholder="Search indicator value, tags, threat types..." style="padding-left:36px;width:100%;" />
+      </div>
+
+      <!-- Type Filter -->
+      <div style="min-width:140px;">
+        <select id="filter-type" class="form-control">
+          <option value="">All Types</option>
+          <option value="ipv4-addr">IPv4 Address</option>
+          <option value="domain-name">Domain Name</option>
+          <option value="file:sha256">File SHA256</option>
+          <option value="url">URL</option>
+          <option value="email-addr">Email Address</option>
+        </select>
+      </div>
+
+      <!-- Severity Filter -->
+      <div style="min-width:140px;">
+        <select id="filter-severity" class="form-control">
+          <option value="">All Severities</option>
+          <option value="critical">Critical</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+
+      <!-- Status Filter -->
+      <div style="min-width:140px;">
+        <select id="filter-status" class="form-control">
+          <option value="">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="expired">Expired</option>
+          <option value="revoked">Revoked</option>
+        </select>
+      </div>
+
+      <!-- Reset Filter Button -->
+      <button class="btn btn-ghost btn-sm" onclick="resetFilters()">
+        <i class="fas fa-undo"></i> Reset
+      </button>
+    </div>
+  </div>
+
+  <!-- Indicators Table Card -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">
+        <i class="fas fa-list-ul"></i> Indicators Catalog
+        <span id="indicator-count-badge" class="badge badge-info" style="margin-left:0.5rem;">0</span>
+      </span>
+      <span style="font-size:0.8rem;color:var(--text-muted);">Click any row to inspect embedded telemetry &amp; attribution</span>
+    </div>
+    
+    <div id="table-container">
+      <div class="loading-state"><div class="spinner"></div><p>Loading threat indicators...</p></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal Shell -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" style="max-width:750px;">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Indicator Details</span>
+      <button class="modal-close" onclick="hideModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module">
+  import { fetchIndicators, fetchIndicator, createIndicator, updateIndicator, deleteIndicator } from './js/api.js';
+  import { severityBadge, typeBadge, statusBadge, formatDate, confidenceBar, showToast, truncate, escHtml } from './js/utils.js';
+
+  let currentIndicators = [];
+
+  window.loadIndicators = async function() {
+    const tableContainer = document.getElementById('table-container');
+    tableContainer.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Loading threat indicators...</p></div>';
+
+    const search = document.getElementById('filter-search').value.trim();
+    const type = document.getElementById('filter-type').value;
+    const severity = document.getElementById('filter-severity').value;
+    const status = document.getElementById('filter-status').value;
+
+    try {
+      const params = {};
+      if (search) params.search = search;
+      if (type) params.type = type;
+      if (severity) params.severity = severity;
+      if (status) params.status = status;
+
+      const res = await fetchIndicators(params);
+      const data = Array.isArray(res) ? res : (res.indicators || res.data || []);
+      currentIndicators = data;
+
+      document.getElementById('indicator-count-badge').textContent = data.length;
+
+      if (!data.length) {
+        tableContainer.innerHTML = `
+          <div class="empty-state" style="padding:3rem 1rem;text-align:center;">
+            <i class="fas fa-search" style="font-size:2.5rem;color:var(--text-muted);margin-bottom:1rem;"></i>
+            <p style="color:var(--text-muted);font-size:1rem;">No indicators match your filter criteria.</p>
+          </div>`;
+        return;
+      }
+
+      tableContainer.innerHTML = `
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Observable Value</th>
+                <th>Severity</th>
+                <th>Status</th>
+                <th>Confidence</th>
+                <th>Threat Types</th>
+                <th>First Seen</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.map(ind => `
+                <tr onclick="window.viewIndicator('${ind._id}')">
+                  <td>${typeBadge(ind.type)}</td>
+                  <td class="td-mono" title="${escHtml(ind.value)}">${escHtml(ind.value)}</td>
+                  <td>${severityBadge(ind.severity)}</td>
+                  <td>${statusBadge(ind.status)}</td>
+                  <td style="min-width:110px;">${confidenceBar(ind.confidence)}</td>
+                  <td>
+                    ${(ind.threat_types || []).slice(0, 2).map(t => `<span class="badge badge-purple" style="font-size:0.65rem;margin-right:2px;">${escHtml(t)}</span>`).join('')}
+                    ${(ind.threat_types || []).length > 2 ? `<span style="font-size:0.7rem;color:var(--text-muted);">+${ind.threat_types.length - 2}</span>` : ''}
+                  </td>
+                  <td style="color:var(--text-muted);white-space:nowrap;">${formatDate(ind.first_seen)}</td>
+                  <td onclick="event.stopPropagation()">
+                    <button class="btn btn-ghost btn-sm" onclick="window.editIndicator('${ind._id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-ghost btn-sm" style="color:var(--accent-red);" onclick="window.removeIndicator('${ind._id}', '${escHtml(ind.value)}')" title="Delete"><i class="fas fa-trash"></i></button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    } catch (err) {
+      tableContainer.innerHTML = `<div class="error-state"><i class="fas fa-exclamation-triangle"></i> Failed to load indicators: ${err.message}</div>`;
+      showToast(`Error: ${err.message}`, 'error');
+    }
+  };
+
+  window.resetFilters = function() {
+    document.getElementById('filter-search').value = '';
+    document.getElementById('filter-type').value = '';
+    document.getElementById('filter-severity').value = '';
+    document.getElementById('filter-status').value = '';
+    window.loadIndicators();
+  };
+
+  // View Indicator Detail Modal
+  window.viewIndicator = async function(id) {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    const footerEl = document.getElementById('modal-footer');
+
+    titleEl.innerHTML = `<i class="fas fa-shield-alt"></i> Threat Indicator Inspection`;
+    bodyEl.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>Fetching indicator details...</p></div>`;
+    footerEl.innerHTML = `<button class="btn btn-ghost" onclick="hideModal()">Close</button>`;
+    overlay.classList.add('open');
+
+    try {
+      const ind = await fetchIndicator(id);
+      
+      const sourcesHtml = (ind.sources && ind.sources.length) ? `
+        <div style="margin-top:1rem;">
+          <h4 style="font-size:0.85rem;text-transform:uppercase;color:var(--accent-cyan);margin-bottom:0.5rem;">
+            <i class="fas fa-layer-group"></i> Embedded Feed Telemetry (sources[])
+          </h4>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Feed Name</th>
+                  <th>Source ID</th>
+                  <th>Reliability</th>
+                  <th>Reported Date</th>
+                  <th>Tags</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${ind.sources.map(s => `
+                  <tr>
+                    <td><strong>${escHtml(s.feed_name)}</strong></td>
+                    <td style="font-family:var(--font-mono);">${escHtml(s.source_id)}</td>
+                    <td><span class="badge badge-info">${escHtml(s.reliability || 'B')}</span></td>
+                    <td>${formatDate(s.first_reported)}</td>
+                    <td>${(s.original_tags || []).map(t => `<span class="badge badge-type" style="font-size:0.65rem;">${escHtml(t)}</span>`).join(' ')}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ` : '<p style="color:var(--text-muted);font-size:0.8rem;">No feed telemetry recorded.</p>';
+
+      const vt = ind.enrichment?.virustotal;
+      const vtHtml = vt ? `
+        <div style="background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.2);padding:0.75rem;border-radius:var(--radius-sm);margin-top:0.75rem;">
+          <span style="font-weight:600;color:var(--accent-cyan);"><i class="fas fa-microscope"></i> VirusTotal Threat Enrichment:</span>
+          <span style="margin-left:0.5rem;font-weight:bold;color:${vt.positives > 20 ? 'var(--accent-red)' : 'var(--accent-amber)'};">${vt.positives} / ${vt.total_engines} Detection Engines Flagged</span>
+          <span style="float:right;font-size:0.75rem;color:var(--text-muted);">Scanned: ${formatDate(vt.scan_date)}</span>
+        </div>
+      ` : '';
+
+      const actors = ind.attribution?.threat_actors || [];
+      const actorsHtml = actors.length ? `
+        <div style="margin-top:0.75rem;">
+          <span style="font-size:0.8rem;color:var(--text-muted);">Attributed Threat Actor:</span>
+          ${actors.map(a => `<a href="actors.html" class="badge badge-critical" style="margin-left:0.5rem;"><i class="fas fa-user-secret"></i> ${escHtml(a.name)}</a>`).join('')}
+        </div>
+      ` : '';
+
+      const mitre = ind.attribution?.mitre_attack;
+      const mitreHtml = mitre ? `
+        <div style="margin-top:0.5rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+          <span style="font-size:0.8rem;color:var(--text-muted);">MITRE ATT&CK:</span>
+          ${(mitre.tactics || []).map(t => `<span class="badge badge-purple">${t}</span>`).join('')}
+          ${(mitre.techniques || []).map(t => `<span class="badge badge-info">${t}</span>`).join('')}
+        </div>
+      ` : '';
+
+      bodyEl.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:1rem;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;background:rgba(0,0,0,0.2);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--card-border);">
+            <div>
+              <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;">
+                ${typeBadge(ind.type)}
+                ${severityBadge(ind.severity)}
+                ${statusBadge(ind.status)}
+              </div>
+              <div style="font-family:var(--font-mono);font-size:1.15rem;font-weight:700;color:var(--accent-cyan);word-break:break-all;">
+                ${escHtml(ind.value)}
+              </div>
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.25rem;">
+                Indicator ID: <span style="font-family:var(--font-mono);">${escHtml(ind.indicator_id || ind._id)}</span>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:0.75rem;color:var(--text-muted);">Confidence Score</div>
+              <div style="font-size:1.5rem;font-weight:700;color:var(--accent-cyan);">${ind.confidence ?? 0}%</div>
+            </div>
+          </div>
+
+          ${vtHtml}
+          ${actorsHtml}
+          ${mitreHtml}
+
+          ${sourcesHtml}
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:0.5rem;font-size:0.8rem;">
+            <div style="background:rgba(255,255,255,0.02);padding:0.75rem;border-radius:var(--radius-sm);">
+              <span style="color:var(--text-muted);">First Seen:</span> <strong>${formatDate(ind.first_seen)}</strong><br/>
+              <span style="color:var(--text-muted);">Last Seen:</span> <strong>${formatDate(ind.last_seen)}</strong>
+            </div>
+            <div style="background:rgba(255,255,255,0.02);padding:0.75rem;border-radius:var(--radius-sm);">
+              <span style="color:var(--text-muted);">Sightings Count:</span> <strong>${ind.metrics?.sightings_count || 1}</strong><br/>
+              <span style="color:var(--text-muted);">Schema Pattern:</span> <strong style="color:var(--accent-green);">Embedded sources[]</strong>
+            </div>
+          </div>
+        </div>`;
+
+      footerEl.innerHTML = `
+        <button class="btn btn-outline btn-sm" onclick="window.editIndicator('${ind._id}')"><i class="fas fa-edit"></i> Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="hideModal()">Close</button>`;
+    } catch (err) {
+      bodyEl.innerHTML = `<div class="error-state">Failed to fetch indicator: ${err.message}</div>`;
+    }
+  };
+
+  // Add Indicator Modal
+  window.openAddModal = function() {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const bodyEl = document.getElementById('modal-body');
+    const footerEl = document.getElementById('modal-footer');
+
+    titleEl.innerHTML = `<i class="fas fa-plus-circle"></i> Add New Threat Indicator`;
+    bodyEl.innerHTML = `
+      <form id="add-indicator-form" style="display:flex;flex-direction:column;gap:1rem;">
+        <div>
+          <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Indicator Type *</label>
+          <select id="new-type" class="form-control" required style="width:100%;">
+            <option value="ipv4-addr">IPv4 Address (e.g. 198.51.100.12)</option>
+            <option value="domain-name">Domain Name (e.g. malicious-c2-update.com)</option>
+            <option value="file:sha256">File Hash SHA256 (64 hex characters)</option>
+            <option value="url">URL (e.g. https://evil-payload.site/dl.exe)</option>
+            <option value="email-addr">Email Address (e.g. phishing@attacker.org)</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Observable Value *</label>
+          <input type="text" id="new-value" class="form-control" placeholder="Enter IP, domain, hash, or URL..." required style="width:100%;font-family:var(--font-mono);" />
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Severity *</label>
+            <select id="new-severity" class="form-control" required style="width:100%;">
+              <option value="critical">Critical</option>
+              <option value="high" selected>High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Status *</label>
+            <select id="new-status" class="form-control" required style="width:100%;">
+              <option value="active" selected>Active</option>
+              <option value="expired">Expired</option>
+              <option value="revoked">Revoked</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Confidence Score (0 - 100)</label>
+            <input type="number" id="new-confidence" class="form-control" min="0" max="100" value="85" style="width:100%;" />
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Primary Feed Source</label>
+            <select id="new-feed" class="form-control" style="width:100%;">
+              <option value="CTI Digest">CTI Digest</option>
+              <option value="AlienVault OTX">AlienVault OTX</option>
+              <option value="VirusTotal Intelligence">VirusTotal Intelligence</option>
+              <option value="MISP Community">MISP Community</option>
+              <option value="Internal Honeypot Grid">Internal Honeypot Grid</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Threat Types (comma-separated)</label>
+          <input type="text" id="new-threat-types" class="form-control" placeholder="malware, command-and-control, ransomware" style="width:100%;" />
+        </div>
+
+        <div>
+          <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Tags (comma-separated)</label>
+          <input type="text" id="new-tags" class="form-control" placeholder="apt, financial, urgent" style="width:100%;" />
+        </div>
+      </form>`;
+
+    footerEl.innerHTML = `
+      <button class="btn btn-primary" onclick="window.submitNewIndicator()"><i class="fas fa-check"></i> Save Indicator</button>
+      <button class="btn btn-ghost" onclick="hideModal()">Cancel</button>`;
+
+    overlay.classList.add('open');
+  };
+
+  window.submitNewIndicator = async function() {
+    const val = document.getElementById('new-value').value.trim();
+    if (!val) {
+      showToast('Observable value is required', 'error');
+      return;
+    }
+
+    const type = document.getElementById('new-type').value;
+    const severity = document.getElementById('new-severity').value;
+    const status = document.getElementById('new-status').value;
+    const confidence = parseInt(document.getElementById('new-confidence').value) || 75;
+    const feed = document.getElementById('new-feed').value;
+    const threatTypes = document.getElementById('new-threat-types').value.split(',').map(s => s.trim()).filter(Boolean);
+    const tags = document.getElementById('new-tags').value.split(',').map(s => s.trim()).filter(Boolean);
+
+    const newDoc = {
+      indicator_id: `ind-user-${Date.now().toString().slice(-4)}`,
+      type,
+      value: val,
+      severity,
+      status,
+      confidence,
+      threat_types: threatTypes.length ? threatTypes : ['general-threat'],
+      tags: tags.length ? tags : ['manual-entry'],
+      first_seen: new Date().toISOString(),
+      last_seen: new Date().toISOString(),
+      sources: [
+        {
+          feed_name: feed,
+          source_id: `src-ui-${Date.now().toString().slice(-4)}`,
+          first_reported: new Date().toISOString(),
+          reliability: 'A',
+          original_tags: tags
+        }
+      ],
+      attribution: { threat_actors: [], campaigns: [], malware_families: [] },
+      metrics: { sightings_count: 1 }
+    };
+
+    try {
+      await createIndicator(newDoc);
+      showToast('Threat indicator created successfully!', 'success');
+      hideModal();
+      window.loadIndicators();
+    } catch (err) {
+      showToast(`Creation failed: ${err.message}`, 'error');
+    }
+  };
+
+  // Edit indicator
+  window.editIndicator = async function(id) {
+    try {
+      const ind = await fetchIndicator(id);
+      const overlay = document.getElementById('modal-overlay');
+      const titleEl = document.getElementById('modal-title');
+      const bodyEl = document.getElementById('modal-body');
+      const footerEl = document.getElementById('modal-footer');
+
+      titleEl.innerHTML = `<i class="fas fa-edit"></i> Edit Indicator: ${escHtml(ind.value)}`;
+      bodyEl.innerHTML = `
+        <form id="edit-indicator-form" style="display:flex;flex-direction:column;gap:1rem;">
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Severity</label>
+            <select id="edit-severity" class="form-control" style="width:100%;">
+              <option value="critical" ${ind.severity === 'critical' ? 'selected' : ''}>Critical</option>
+              <option value="high" ${ind.severity === 'high' ? 'selected' : ''}>High</option>
+              <option value="medium" ${ind.severity === 'medium' ? 'selected' : ''}>Medium</option>
+              <option value="low" ${ind.severity === 'low' ? 'selected' : ''}>Low</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Status</label>
+            <select id="edit-status" class="form-control" style="width:100%;">
+              <option value="active" ${ind.status === 'active' ? 'selected' : ''}>Active</option>
+              <option value="expired" ${ind.status === 'expired' ? 'selected' : ''}>Expired</option>
+              <option value="revoked" ${ind.status === 'revoked' ? 'selected' : ''}>Revoked</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.8rem;color:var(--text-muted);display:block;margin-bottom:0.25rem;">Confidence Score (0-100)</label>
+            <input type="number" id="edit-confidence" class="form-control" value="${ind.confidence ?? 75}" min="0" max="100" style="width:100%;" />
+          </div>
+        </form>`;
+
+      footerEl.innerHTML = `
+        <button class="btn btn-primary" onclick="window.saveIndicatorEdit('${id}')"><i class="fas fa-save"></i> Save Changes</button>
+        <button class="btn btn-ghost" onclick="hideModal()">Cancel</button>`;
+
+      overlay.classList.add('open');
+    } catch (err) {
+      showToast(`Error: ${err.message}`, 'error');
+    }
+  };
+
+  window.saveIndicatorEdit = async function(id) {
+    const severity = document.getElementById('edit-severity').value;
+    const status = document.getElementById('edit-status').value;
+    const confidence = parseInt(document.getElementById('edit-confidence').value) || 50;
+
+    try {
+      await updateIndicator(id, { severity, status, confidence });
+      showToast('Indicator updated successfully', 'success');
+      hideModal();
+      window.loadIndicators();
+    } catch (err) {
+      showToast(`Update failed: ${err.message}`, 'error');
+    }
+  };
+
+  // Remove indicator
+  window.removeIndicator = async function(id, val) {
+    if (!confirm(`Are you sure you want to delete indicator "${val}"?`)) return;
+    try {
+      await deleteIndicator(id);
+      showToast(`Indicator removed`, 'info');
+      window.loadIndicators();
+    } catch (err) {
+      showToast(`Delete failed: ${err.message}`, 'error');
+    }
+  };
+
+  // Setup event listeners for filtering
+  document.getElementById('filter-search').addEventListener('input', () => {
+    clearTimeout(window._searchTimer);
+    window._searchTimer = setTimeout(window.loadIndicators, 300);
+  });
+  document.getElementById('filter-type').addEventListener('change', window.loadIndicators);
+  document.getElementById('filter-severity').addEventListener('change', window.loadIndicators);
+  document.getElementById('filter-status').addEventListener('change', window.loadIndicators);
+
+  // Initial load
+  window.loadIndicators();
+</script>
+
+<script>
+  function hideModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+</script>
+</body>
+</html>

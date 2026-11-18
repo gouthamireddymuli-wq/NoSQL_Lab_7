@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CTI Platform — Lab 14: Managing Services in Production</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <div style="display:flex;align-items:center;">
+    <button id="sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar"><i class="fas fa-bars"></i></button>
+    <div class="navbar-brand"><i class="fas fa-shield-virus"></i> CTI Platform <span class="brand-dot"></span></div>
+  </div>
+  <ul class="navbar-nav">
+    <li><a href="index.html"><i class="fas fa-th-large"></i> Dashboard</a></li>
+    <li><a href="indicators.html"><i class="fas fa-crosshairs"></i> Indicators</a></li>
+    <li><a href="reports.html"><i class="fas fa-file-alt"></i> Reports</a></li>
+    <li><a href="actors.html"><i class="fas fa-user-secret"></i> Threat Actors</a></li>
+    <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+    <li><a href="labs.html" class="active"><i class="fas fa-book-open"></i> Labs Portal</a></li>
+  </ul>
+  <div class="navbar-status"><div class="status-indicator"></div><span>Live</span></div>
+</nav>
+
+<div class="app-layout">
+  <aside id="app-sidebar" class="sidebar"></aside>
+
+  <main class="main-content">
+    <div class="page-wrapper" style="max-width:1200px;">
+      
+      <div class="page-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+            <span class="badge badge-purple">Chapter 14</span>
+            <span class="badge badge-low">Production Operations</span>
+          </div>
+          <h1 class="page-title"><i class="fas fa-tachometer-alt"></i> Lab 14: Managing Database Services, Diagnostics &amp; Disaster Recovery</h1>
+          <p class="page-subtitle">Real-time profiling, mongostat monitoring, oplog window sizing, and Point-In-Time Recovery (PITR) workflows</p>
+        </div>
+        <div style="font-size:0.8rem;color:var(--text-muted);text-align:right;">
+          Student: <strong>M Gouthami</strong> (<span style="font-family:var(--font-mono);color:var(--accent-cyan);">24BTRCL130</span>)
+        </div>
+      </div>
+
+      <!-- Diagnostics Architecture -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <h3 style="font-size:1.1rem;color:var(--accent-cyan);margin-bottom:0.75rem;">
+          <i class="fas fa-chart-line"></i> 1. Database Query Profiling &amp; Real-Time Diagnostics
+        </h3>
+        <p style="font-size:0.88rem;color:#cbd5e1;line-height:1.6;margin-bottom:1rem;">
+          In high-volume SIEM correlation environments, slow database queries directly increase threat detection dwell time. We configure MongoDB database profiler at Level 1 to catch all operations exceeding 50 ms.
+        </p>
+
+        <div class="grid-3">
+          <div style="background:rgba(0,0,0,0.3);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--card-border);">
+            <div style="color:var(--accent-cyan);font-weight:700;margin-bottom:0.4rem;">mongostat Metrics</div>
+            <p style="font-size:0.8rem;color:#cbd5e1;line-height:1.5;">Tracks real-time insert/query/update rates, dirty bytes percentage, and active client read/write queues.</p>
+          </div>
+          <div style="background:rgba(0,0,0,0.3);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--card-border);">
+            <div style="color:var(--accent-green);font-weight:700;margin-bottom:0.4rem;">mongotop Monitoring</div>
+            <p style="font-size:0.8rem;color:#cbd5e1;line-height:1.5;">Identifies exactly which collection (e.g. <code>indicators</code> vs <code>reports</code>) is consuming the highest CPU read/write time.</p>
+          </div>
+          <div style="background:rgba(0,0,0,0.3);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--card-border);">
+            <div style="color:var(--accent-amber);font-weight:700;margin-bottom:0.4rem;">Point-in-Time Recovery</div>
+            <p style="font-size:0.8rem;color:#cbd5e1;line-height:1.5;">Combines binary snapshots with oplog replays to restore any collection to an exact historical microsecond.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backup and Restore Workflow -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <h3 style="font-size:1.1rem;color:var(--accent-green);margin-bottom:0.75rem;">
+          <i class="fas fa-undo"></i> 2. Point-in-Time Recovery (PITR) Disaster Drill
+        </h3>
+        <pre style="background:#050811;padding:1rem;border-radius:var(--radius-sm);color:#4ade80;font-size:0.82rem;overflow-x:auto;"><code># 1. Consistent Snapshot Dump with Oplog capture
+mongodump --uri="mongodb+srv://..." --oplog --out=/backups/snapshot-$(date +%Y%m%d)
+
+# 2. Extract corrupting event timestamp from oplog.rs
+# Find the exact timestamp $T of accidental deletion or ransomware corruption
+
+# 3. Replay oplog up to, but not including, the corrupting event ($T)
+mongorestore --uri="mongodb+srv://..." --oplogReplay --oplogLimit="$T" /backups/snapshot/</code></pre>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script type="module">
+  import { initSidebar } from './js/sidebar.js';
+  initSidebar('lab-14');
+</script>
+</body>
+</html>

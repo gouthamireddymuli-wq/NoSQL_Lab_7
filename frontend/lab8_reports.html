@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CTI Platform – Lab 8 Replica Set Reports</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="navbar">
+  <div style="display:flex;align-items:center;"><button id="sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar"><i class="fas fa-bars"></i></button><div class="navbar-brand">
+    <i class="fas fa-shield-virus"></i>
+    CTI Platform
+    <span class="brand-dot"></span>
+  </div></div>
+  <ul class="navbar-nav">
+    <li><a href="index.html"><i class="fas fa-th-large"></i> Dashboard</a></li>
+    <li><a href="indicators.html"><i class="fas fa-crosshairs"></i> Threat Indicators</a></li>
+    <li><a href="reports.html"><i class="fas fa-file-alt"></i> Reports</a></li>
+    <li><a href="actors.html"><i class="fas fa-user-secret"></i> Threat Actors</a></li>
+    <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+    <li><a href="lab_reports.html"><i class="fas fa-flask"></i> Lab Reports</a></li>
+    <li><a href="labs.html"><i class="fas fa-book-open"></i> Labs Portal</a></li>
+    <li><a href="lab8_reports.html" class="active"><i class="fas fa-database"></i> Lab 8</a></li>
+    <li><a href="lab9_reports.html"><i class="fas fa-network-wired"></i> Lab 9</a></li>
+  </ul>
+  <div class="navbar-status">
+    <div class="status-indicator"></div>
+    <span>Live</span>
+  </div>
+</nav>
+
+<div class="app-layout">
+  <aside id="app-sidebar" class="sidebar"></aside>
+  <main class="main-content">
+    <div class="page-wrapper" style="max-width:1200px;">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title"><i class="fas fa-database"></i> Lab 8 Replica Set Reports</h1>
+      <p class="page-subtitle">MongoDB Replica Set deployment, failover observation, and election behaviour — Labs 8.1 &amp; 8.2 with interactive live panels</p>
+    </div>
+    <a href="lab_reports.html" class="btn btn-outline">
+      <i class="fas fa-flask"></i> Lab 7 Reports
+    </a>
+  </div>
+
+  <!-- Quick Navigation -->
+  <div class="card" style="margin-bottom:2rem;background:rgba(0,212,255,0.03);border-color:rgba(0,212,255,0.2);">
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center;">
+      <span style="font-weight:700;color:var(--accent-cyan);font-size:0.9rem;"><i class="fas fa-compass"></i> Quick Navigation:</span>
+      <a href="#lab-8-1" style="font-size:0.85rem;"><i class="fas fa-angle-right"></i> Lab 8.1: Deploy Local Replica Set</a>
+      <a href="#activity-8-1" style="font-size:0.85rem;"><i class="fas fa-angle-right"></i> Activity 8.1: Replica Set Exploration</a>
+      <a href="#activity-8-1-try" style="font-size:0.85rem;"><i class="fas fa-angle-right"></i> Activity 8.1 Try It: Arbiter Node</a>
+      <a href="#lab-8-2" style="font-size:0.85rem;"><i class="fas fa-angle-right"></i> Lab 8.2: Failover &amp; Election</a>
+      <a href="#activity-8-2" style="font-size:0.85rem;"><i class="fas fa-angle-right"></i> Activity 8.2: Failover Monitor</a>
+      <a href="#activity-8-2-try" style="font-size:0.85rem;"><i class="fas fa-angle-right"></i> Activity 8.2 Try It: Priority Elections</a>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- LAB 8.1: DEPLOY LOCAL REPLICA SET                            -->
+  <!-- ============================================================ -->
+  <section id="lab-8-1" style="margin-bottom:3rem;">
+    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;border-bottom:2px solid var(--accent-cyan);padding-bottom:0.5rem;">
+      <span class="badge badge-type" style="font-size:0.85rem;padding:0.4rem 0.8rem;">Lab 8.1</span>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--text-primary);margin:0;">
+        Deploy Local Replica Set
+      </h2>
+    </div>
+
+    <!-- Card 1: Objective & Setup -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <h3 style="font-size:1.05rem;color:var(--accent-cyan);margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+        <i class="fas fa-bullseye"></i> Objective &amp; Setup
+      </h3>
+      <p style="font-size:0.88rem;color:#cbd5e1;line-height:1.7;margin-bottom:1rem;">
+        Lab 8.1 deploys a <strong>3-node MongoDB Replica Set</strong> (<code>rs0</code>) using Docker Compose on ports
+        <code>27017</code>, <code>27018</code>, and <code>27019</code>. A replica set is a group of <code>mongod</code>
+        processes that maintain the same dataset, providing redundancy and high availability.
+      </p>
+
+      <div class="grid-2" style="margin-bottom:1rem;">
+        <div style="background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.2);padding:1rem;border-radius:var(--radius-sm);">
+          <h4 style="color:var(--accent-cyan);font-size:0.95rem;margin-bottom:0.75rem;"><i class="fas fa-cogs"></i> <code>rs.initiate()</code> Explained</h4>
+          <p style="font-size:0.83rem;color:#94a3b8;line-height:1.6;">
+            <code>rs.initiate()</code> bootstraps a replica set by sending a configuration document to the primary
+            candidate. MongoDB negotiates an election and elects the member with the highest <strong>priority</strong>
+            as PRIMARY. Once initiated, the replica set begins continuous oplog replication between all members.
+          </p>
+        </div>
+        <div style="background:rgba(0,0,0,0.25);border:1px solid var(--card-border);padding:1rem;border-radius:var(--radius-sm);">
+          <h4 style="color:var(--accent-amber);font-size:0.95rem;margin-bottom:0.75rem;"><i class="fas fa-sitemap"></i> Member Roles</h4>
+          <ul style="padding-left:1.2rem;font-size:0.83rem;color:#94a3b8;line-height:1.9;">
+            <li><span style="color:var(--accent-cyan);font-weight:700;">PRIMARY</span> — Receives all write operations; replicates to secondaries via the oplog.</li>
+            <li><span style="color:var(--accent-green);font-weight:700;">SECONDARY</span> — Replicates data from primary; can serve reads if explicitly enabled.</li>
+            <li><span style="color:var(--accent-amber);font-weight:700;">ARBITER</span> — Votes in elections only; stores no data, requires minimal resources.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="background:rgba(0,255,136,0.03);border:1px solid rgba(0,255,136,0.2);padding:0.85rem 1rem;border-radius:var(--radius-sm);">
+        <div style="font-size:0.83rem;color:#94a3b8;line-height:1.6;">
+          <strong style="color:var(--accent-green);">Docker Compose Setup:</strong> Three <code>mongo:7</code> containers share a bridge network (<code>rs0_net</code>).
+          Persistent volumes (<code>rs0_data1/2/3</code>) ensure data survives container restarts. Each container receives
+          <code>--replSet rs0</code> as a startup flag, telling MongoDB which replica set it belongs to.
+          After containers are healthy, <code>init_replicaset.js</code> is executed via <code>mongosh</code> to call <code>rs.initiate()</code>.
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Replica Set Live Status -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-header">
+        <span class="card-title" style="color:var(--accent-cyan);">
+          <i class="fas fa-heartbeat"></i> Replica Set Live Status
+        </span>
+        <button id="btn-refresh-status" class="btn btn-primary btn-sm" onclick="refreshReplicaSetStatus()">
+          <i class="fas fa-sync-alt"></i> Refresh Status
+        </button>
+      </div>
+
+      <div id="rs-status-container" style="margin-top:0.75rem;">
+        <div style="color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-info-circle"></i> Click "Refresh Status" to load live replica set state.</div>
+      </div>
+    </div>
+
+    <!-- Card 3: Insert & Verify Replication -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-header">
+        <span class="card-title" style="color:var(--accent-green);">
+          <i class="fas fa-file-import"></i> Insert &amp; Verify Replication
+        </span>
+        <div style="display:flex;gap:0.5rem;">
+          <button class="btn btn-primary btn-sm" onclick="insertTestDoc()">
+            <i class="fas fa-plus-circle"></i> Insert Test Document
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="verifyAllNodes()">
+            <i class="fas fa-check-double"></i> Verify on All Nodes
+          </button>
+        </div>
+      </div>
+
+      <div id="insert-result" style="margin-top:0.75rem;display:none;"></div>
+      <div id="verify-result" style="margin-top:0.75rem;display:none;"></div>
+    </div>
+
+    <!-- Card 4: rs.initiate() Code -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <h3 style="font-size:1.05rem;color:var(--accent-cyan);margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+        <i class="fas fa-code"></i> <code>rs.initiate()</code> Configuration (from <code>init_replicaset.js</code>)
+      </h3>
+      <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:0.75rem;line-height:1.6;">
+        This configuration establishes a 3-member replica set named <code>rs0</code>. Member <code>_id:0</code> on port
+        <strong>27017</strong> is given the highest priority (<code>2</code>), so it will always be elected PRIMARY after
+        a clean start. The other two members have equal priority (<code>1</code>).
+      </p>
+      <pre style="background:#050811;padding:1rem;border-radius:6px;font-size:0.82rem;color:#38bdf8;overflow-x:auto;border:1px solid rgba(56,189,248,0.15);"><code>rs.initiate({
+  _id: "rs0",
+  members: [
+    { _id: 0, host: "host.docker.internal:27017", priority: 2 },
+    { _id: 1, host: "host.docker.internal:27018", priority: 1 },
+    { _id: 2, host: "host.docker.internal:27019", priority: 1 }
+  ]
+})</code></pre>
+      <div style="margin-top:0.75rem;font-size:0.82rem;color:var(--text-muted);">
+        <i class="fas fa-info-circle" style="color:var(--accent-cyan);"></i>
+        Run with: <code>mongosh --port 27017 --file init_replicaset.js</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- ACTIVITY 8.1: Exploration (anchor)                           -->
+  <!-- ============================================================ -->
+  <section id="activity-8-1" style="margin-bottom:1rem;">
+    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;border-bottom:2px solid var(--accent-amber);padding-bottom:0.5rem;">
+      <span class="badge badge-amber" style="font-size:0.85rem;padding:0.4rem 0.8rem;">Activity 8.1</span>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--text-primary);margin:0;">
+        Replica Set Exploration
+      </h2>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- ACTIVITY 8.1 TRY IT YOURSELF: ARBITER NODE                  -->
+  <!-- ============================================================ -->
+  <section id="activity-8-1-try" style="margin-bottom:3rem;">
+    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;border-bottom:2px solid var(--accent-green);padding-bottom:0.5rem;">
+      <span class="badge" style="font-size:0.85rem;padding:0.4rem 0.8rem;background:rgba(0,255,136,0.1);color:var(--accent-green);border:1px solid rgba(0,255,136,0.3);">Activity 8.1 Try It Yourself</span>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--text-primary);margin:0;">
+        Arbiter Node
+      </h2>
+    </div>
+
+    <div class="card" style="border-color:var(--accent-green);background:rgba(0,255,136,0.02);">
+      <h3 style="font-size:1.05rem;color:var(--accent-green);margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+        <i class="fas fa-vote-yea"></i> Understanding the Arbiter Role
+      </h3>
+
+      <!-- With/Without Arbiter Comparison Table -->
+      <div class="table-wrapper" style="margin-bottom:1.5rem;">
+        <table>
+          <thead>
+            <tr>
+              <th style="color:var(--accent-green);">With Arbiter (2 data nodes + 1 arbiter)</th>
+              <th style="color:var(--accent-red);">Without Arbiter (2 data nodes only)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Majority quorum = 2 out of 3 votes → elections always succeed</td>
+              <td>Majority quorum = 2 out of 2 → one failure = no quorum, no election</td>
+            </tr>
+            <tr>
+              <td>Arbiter uses near-zero RAM/CPU (no data storage)</td>
+              <td>Third node must be a full data-bearing replica (+RAM +storage cost)</td>
+            </tr>
+            <tr>
+              <td>Tie-breaking vote prevents split-brain in network partition</td>
+              <td>Split-brain: both nodes see themselves as isolated, writes blocked</td>
+            </tr>
+            <tr>
+              <td>Failover completes even if one data node is offline</td>
+              <td>Loss of any node causes the remaining node to step down</td>
+            </tr>
+            <tr>
+              <td>Ideal for resource-constrained environments (IoT, dev labs)</td>
+              <td>All members must have identical storage capacity</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Key Config Point -->
+      <div style="background:rgba(255,170,0,0.06);border:1px solid rgba(255,170,0,0.3);padding:0.85rem 1rem;border-radius:var(--radius-sm);margin-bottom:1.25rem;">
+        <div style="font-weight:700;color:var(--accent-amber);margin-bottom:0.4rem;font-size:0.9rem;">
+          <i class="fas fa-key"></i> Key Configuration: <code>arbiterOnly: true</code>
+        </div>
+        <div style="font-size:0.83rem;color:#94a3b8;">
+          Setting <code>arbiterOnly: true</code> tells MongoDB this member participates in elections with 1 vote
+          but <strong>never stores user data</strong>. It cannot be elected PRIMARY and does not replicate the oplog.
+        </div>
+      </div>
+
+      <!-- Arbiter Init Code -->
+      <h4 style="font-size:0.9rem;color:var(--accent-cyan);margin-bottom:0.5rem;"><i class="fas fa-code"></i> Arbiter Init Configuration (port 27020):</h4>
+      <pre style="background:#050811;padding:1rem;border-radius:6px;font-size:0.8rem;color:#38bdf8;overflow-x:auto;border:1px solid rgba(56,189,248,0.15);margin-bottom:1.5rem;"><code>rs.initiate({
+  _id: "rs0",
+  members: [
+    { _id: 0, host: "host.docker.internal:27017", priority: 2 },
+    { _id: 1, host: "host.docker.internal:27018", priority: 1 },
+    { _id: 2, host: "host.docker.internal:27020", arbiterOnly: true }
+  ]
+})</code></pre>
+
+      <!-- Written Explanation -->
+      <h4 style="font-size:0.9rem;color:var(--accent-green);margin-bottom:0.75rem;"><i class="fas fa-book-open"></i> Why Arbiters Are Useful</h4>
+      <div style="font-size:0.87rem;color:#cbd5e1;line-height:1.75;">
+        <p style="margin-bottom:0.9rem;">
+          In distributed systems, reaching a decision requires a <strong>majority of votes</strong>. MongoDB's election
+          protocol uses the Raft consensus algorithm, where a node needs ⌊N/2⌋ + 1 votes to be elected PRIMARY. With
+          only two data-bearing nodes, neither can achieve a majority if the other is unreachable — causing the entire
+          replica set to become read-only. An arbiter solves this by providing the decisive third vote without the
+          storage and memory overhead of a full data node.
+        </p>
+        <p style="margin-bottom:0.9rem;">
+          Consider a scenario where your infrastructure budget limits you to two powerful database servers. Adding a
+          third full replica would triple your storage costs. Instead, you can run an arbiter on a cheap VM or even
+          a Docker container on the application server. The arbiter consumes under 1 MB of RAM, requires no disk
+          space for data, and contributes exactly one vote — the same as any data-bearing node — to election quorum.
+          This is why arbiters are extremely popular in cost-sensitive deployments.
+        </p>
+        <p style="margin-bottom:0.9rem;">
+          The arbiter also protects against <strong>split-brain</strong> scenarios. In a network partition where two
+          data nodes can no longer communicate, each node might believe itself to be the only surviving member and
+          attempt to accept writes independently, creating divergent datasets. With an arbiter in a third network
+          zone (or even on the application server), the arbiter's vote prevents any isolated single node from
+          claiming majority, forcing the system into a safe read-only state rather than allowing a dangerous
+          split-brain.
+        </p>
+        <p>
+          One important caveat: an arbiter with <code>arbiterOnly: true</code> <strong>cannot serve reads</strong>.
+          Attempting to query it directly will raise an error because it holds no collection data. Its sole purpose
+          is voting. This makes it fundamentally different from a SECONDARY, which can be configured to serve reads
+          with <code>readPreference: "secondaryPreferred"</code>. Understanding this distinction is critical for
+          correctly routing application traffic in a 2-data-node + arbiter topology.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- LAB 8.2: OBSERVE FAILOVER AND ELECTION                       -->
+  <!-- ============================================================ -->
+  <section id="lab-8-2" style="margin-bottom:3rem;">
+    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;border-bottom:2px solid var(--accent-red);padding-bottom:0.5rem;">
+      <span class="badge badge-critical" style="font-size:0.85rem;padding:0.4rem 0.8rem;">Lab 8.2</span>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--text-primary);margin:0;">
+        Observe Failover and Election
+      </h2>
+    </div>
+
+    <!-- Card 1: Force Stepdown -->
+    <div class="card" style="margin-bottom:1.5rem;border-color:rgba(255,68,68,0.3);">
+      <h3 style="font-size:1.05rem;color:var(--accent-red);margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+        <i class="fas fa-step-forward"></i> Force Stepdown
+      </h3>
+
+      <div style="background:rgba(255,170,0,0.08);border:1px solid rgba(255,170,0,0.4);border-radius:var(--radius-sm);padding:0.85rem 1rem;margin-bottom:1rem;display:flex;align-items:flex-start;gap:0.75rem;">
+        <i class="fas fa-exclamation-triangle" style="color:var(--accent-amber);margin-top:0.1rem;flex-shrink:0;"></i>
+        <div style="font-size:0.85rem;color:var(--accent-amber);">
+          <strong>Warning:</strong> This will trigger a primary election. Only use in the lab environment. The current
+          primary will step down and a new election will begin among the secondaries.
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+        <button id="btn-stepdown" class="btn btn-danger" onclick="doStepDown()">
+          <i class="fas fa-arrow-down"></i> Step Down Primary
+        </button>
+        <div id="stepdown-result" style="display:none;font-size:0.85rem;"></div>
+      </div>
+      <div style="margin-top:0.75rem;font-size:0.83rem;color:var(--text-muted);">
+        <i class="fas fa-clock"></i> New primary will be elected within ~10 seconds.
+      </div>
+    </div>
+
+    <!-- Card 2: Live Failover Monitor -->
+    <div id="activity-8-2" class="card" style="margin-bottom:1.5rem;border-color:var(--accent-cyan);background:rgba(0,212,255,0.02);">
+      <div class="card-header">
+        <span class="card-title" style="color:var(--accent-cyan);">
+          <i class="fas fa-broadcast-tower"></i> Live Failover Monitor
+        </span>
+        <button id="btn-toggle-failover" class="btn btn-primary btn-sm" onclick="toggleFailoverMonitor()">
+          <i class="fas fa-play"></i> Start Monitoring
+        </button>
+      </div>
+      <div style="font-size:0.83rem;color:var(--text-muted);margin-bottom:0.75rem;">
+        Polls <code>/api/replicaset/status</code> every 5 seconds for up to 60 seconds. Detects PRIMARY changes and highlights failover events.
+      </div>
+      <div id="failover-console" style="background:#050811;border:1px solid var(--card-border);border-radius:var(--radius-sm);padding:1rem;font-family:var(--font-mono);font-size:0.8rem;min-height:160px;max-height:320px;overflow-y:auto;">
+        <div style="color:var(--text-muted);">[Ready] Click "Start Monitoring" to begin polling replica set status...</div>
+      </div>
+    </div>
+
+    <!-- Card 3: Failover Log -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-header">
+        <span class="card-title" style="color:var(--accent-purple);">
+          <i class="fas fa-scroll"></i> Failover Log
+        </span>
+        <button class="btn btn-outline btn-sm" onclick="loadFailoverLog()">
+          <i class="fas fa-download"></i> Load Log
+        </button>
+      </div>
+      <div id="failover-log-container" style="margin-top:0.75rem;">
+        <div style="color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-info-circle"></i> Click "Load Log" to fetch the last 50 lines of <code>failover_log.txt</code>.</div>
+      </div>
+    </div>
+
+    <!-- Card 4: activity_8_2.py Code Walkthrough -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <h3 style="font-size:1.05rem;color:var(--accent-cyan);margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+        <i class="fas fa-code"></i> <code>activity_8_2.py</code> Key Functions
+      </h3>
+
+      <div style="margin-bottom:1.25rem;">
+        <h4 style="font-size:0.88rem;color:var(--accent-amber);margin-bottom:0.5rem;"><i class="fas fa-search"></i> <code>get_primary(client)</code> — Detect current primary</h4>
+        <pre style="background:#050811;padding:0.85rem;border-radius:6px;font-size:0.78rem;color:#4ade80;overflow-x:auto;border:1px solid rgba(74,222,128,0.15);"><code>def get_primary(client):
+    """Returns the current primary host string from rs.status()."""
+    status = client.admin.command("replSetGetStatus")
+    for member in status["members"]:
+        if member["stateStr"] == "PRIMARY":
+            return member["name"]
+    return None</code></pre>
+      </div>
+
+      <div style="margin-bottom:1.25rem;">
+        <h4 style="font-size:0.88rem;color:var(--accent-amber);margin-bottom:0.5rem;"><i class="fas fa-eye"></i> <code>monitor_replica_set(duration, interval)</code> — Poll &amp; detect failover</h4>
+        <pre style="background:#050811;padding:0.85rem;border-radius:6px;font-size:0.78rem;color:#4ade80;overflow-x:auto;border:1px solid rgba(74,222,128,0.15);"><code>def monitor_replica_set(duration=90, interval=2):
+    client = MongoClient(RS_URI)
+    start = time.time()
+    last_primary = get_primary(client)
+
+    with open("failover_log.txt", "w") as log:
+        while time.time() - start < duration:
+            current_primary = get_primary(client)
+            ts = datetime.now().strftime("%H:%M:%S")
+
+            if current_primary != last_primary:
+                msg = f"*** FAILOVER DETECTED: {last_primary} → {current_primary} ***"
+                print(f"\033[91m{msg}\033[0m")
+                log.write(msg + "\n")
+                last_primary = current_primary
+
+            # Print all member states
+            status = client.admin.command("replSetGetStatus")
+            for m in status["members"]:
+                line = f"[{ts}] {m['name']} → {m['stateStr']}"
+                print(line)
+                log.write(line + "\n")
+
+            time.sleep(interval)</code></pre>
+      </div>
+
+      <div>
+        <h4 style="font-size:0.88rem;color:var(--accent-amber);margin-bottom:0.5rem;"><i class="fas fa-sync"></i> <code>continuous_read_demo(duration, interval)</code> — Read during failover</h4>
+        <pre style="background:#050811;padding:0.85rem;border-radius:6px;font-size:0.78rem;color:#4ade80;overflow-x:auto;border:1px solid rgba(74,222,128,0.15);"><code>def continuous_read_demo(duration=60, interval=1):
+    client = MongoClient(RS_URI, read_preference=ReadPreference.PRIMARY_PREFERRED)
+    col = client.testdb.replication_test
+    start = time.time()
+
+    while time.time() - start < duration:
+        try:
+            doc = col.find_one(sort=[("_id", -1)])
+            host = client.address
+            print(f"  → Read from {host}: {doc.get('label') if doc else 'empty'}")
+        except ConnectionFailure as e:
+            print(f"  [ConnectionFailure] Reconnecting... {e}")
+        time.sleep(interval)</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- ACTIVITY 8.2 TRY IT YOURSELF: PRIORITY ELECTIONS             -->
+  <!-- ============================================================ -->
+  <section id="activity-8-2-try" style="margin-bottom:3rem;">
+    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;border-bottom:2px solid var(--accent-green);padding-bottom:0.5rem;">
+      <span class="badge" style="font-size:0.85rem;padding:0.4rem 0.8rem;background:rgba(0,255,136,0.1);color:var(--accent-green);border:1px solid rgba(0,255,136,0.3);">Activity 8.2 Try It Yourself</span>
+      <h2 style="font-size:1.4rem;font-weight:700;color:var(--text-primary);margin:0;">
+        Priority-Based Elections
+      </h2>
+    </div>
+
+    <!-- Card 1: Priority Configuration -->
+    <div class="card" style="margin-bottom:1.5rem;border-color:var(--accent-green);background:rgba(0,255,136,0.02);">
+      <h3 style="font-size:1.05rem;color:var(--accent-green);margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+        <i class="fas fa-sliders-h"></i> Priority Configuration
+      </h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Node</th>
+              <th>Host</th>
+              <th>Priority</th>
+              <th>Election Prediction</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>mongo-rs0-1</strong></td>
+              <td><code>:27017</code></td>
+              <td><span style="color:var(--accent-red);font-weight:700;">1</span></td>
+              <td><span style="color:var(--text-muted);"><i class="fas fa-times-circle"></i> Will NOT win (lowest priority)</span></td>
+            </tr>
+            <tr style="background:rgba(0,255,136,0.05);">
+              <td><strong>mongo-rs0-2</strong></td>
+              <td><code>:27018</code></td>
+              <td><span style="color:var(--accent-green);font-weight:700;">3</span></td>
+              <td><span style="color:var(--accent-green);font-weight:700;"><i class="fas fa-crown"></i> WILL WIN (highest priority)</span></td>
+            </tr>
+            <tr>
+              <td><strong>mongo-rs0-3</strong></td>
+              <td><code>:27019</code></td>
+              <td><span style="color:var(--accent-amber);font-weight:700;">2</span></td>
+              <td><span style="color:var(--accent-amber);"><i class="fas fa-question-circle"></i> Could win if :27018 is down</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Card 2: Prediction & Verification -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <h3 style="font-size:1.05rem;color:var(--accent-cyan);margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+        <i class="fas fa-magic"></i> Prediction &amp; Verification
+      </h3>
+
+      <!-- Step flow -->
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <!-- Step 1 -->
+        <div style="display:flex;align-items:flex-start;gap:1rem;padding:0.85rem 1rem;background:rgba(0,0,0,0.25);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-cyan);color:#0a0e1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0;">1</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;color:var(--text-primary);margin-bottom:0.4rem;">Check current state of the replica set</div>
+            <button class="btn btn-primary btn-sm" onclick="checkCurrentPrimary()">
+              <i class="fas fa-search"></i> Check Current Primary
+            </button>
+            <div id="check-primary-result" style="margin-top:0.5rem;font-size:0.83rem;display:none;"></div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div style="display:flex;align-items:flex-start;gap:1rem;padding:0.85rem 1rem;background:rgba(0,0,0,0.25);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-amber);color:#0a0e1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0;">2</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;color:var(--text-primary);margin-bottom:0.4rem;">Make a prediction based on priorities</div>
+            <button class="btn btn-outline btn-sm" onclick="makePrediction()">
+              <i class="fas fa-lightbulb"></i> Make Prediction
+            </button>
+            <div id="prediction-result" style="margin-top:0.5rem;font-size:0.83rem;display:none;"></div>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div style="display:flex;align-items:flex-start;gap:1rem;padding:0.85rem 1rem;background:rgba(0,0,0,0.25);border:1px solid var(--card-border);border-radius:var(--radius-sm);">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--accent-green);color:#0a0e1a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0;">3</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;color:var(--text-primary);margin-bottom:0.4rem;">After stepdown, verify if prediction was correct</div>
+            <button class="btn btn-outline btn-sm" onclick="verifyPrediction()">
+              <i class="fas fa-check-circle"></i> Verify After Stepdown
+            </button>
+            <div id="verify-prediction-result" style="margin-top:0.5rem;font-size:0.83rem;display:none;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Election Algorithm Explanation -->
+    <div class="card" style="border-color:var(--accent-purple);background:rgba(155,89,182,0.02);">
+      <h3 style="font-size:1.05rem;color:var(--accent-purple);margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+        <i class="fas fa-graduation-cap"></i> MongoDB Election Algorithm Explained
+      </h3>
+      <div style="font-size:0.87rem;color:#cbd5e1;line-height:1.75;">
+        <p style="margin-bottom:0.9rem;">
+          MongoDB replica set elections are governed by a modified version of the <strong>Raft consensus protocol</strong>.
+          When the current primary steps down — either voluntarily via <code>rs.stepDown()</code> or due to a network
+          failure — all eligible secondaries transition to a SECONDARY state briefly and then one or more candidates
+          initiate an election by incrementing the election term and requesting votes from peers.
+        </p>
+        <p style="margin-bottom:0.9rem;">
+          <strong style="color:var(--accent-purple);">Priority and election score:</strong> Each member has a configured
+          <code>priority</code> value (default: 1). A higher priority member will <em>veto</em> a lower-priority candidate's
+          victory if the high-priority member is eligible (i.e., its oplog is sufficiently up to date). MongoDB
+          calculates an election "score" that incorporates both priority and oplog recency, ensuring the most
+          qualified member wins rather than simply the fastest to call an election.
+        </p>
+        <p style="margin-bottom:0.9rem;">
+          <strong style="color:var(--accent-purple);">Priority = 0 means never primary:</strong> Any member with
+          <code>priority: 0</code> is permanently ineligible to become PRIMARY. It can still vote in elections, replicate
+          data, and serve reads (if <code>secondaryOk</code> is set), but it will never initiate an election or accept
+          a vote for itself. This is used for dedicated reporting nodes, geographically distant replicas, and hidden
+          members that should not attract write traffic.
+        </p>
+        <p>
+          <strong style="color:var(--accent-purple);">Oplog recency requirement:</strong> Even the highest-priority member
+          cannot win an election if its oplog lags too far behind. MongoDB requires that the winning candidate's oplog
+          timestamp (the <em>lastApplied</em> OpTime) is no more than a configurable threshold behind the most advanced
+          member's oplog. This prevents a restarted secondary that missed many writes from becoming primary and potentially
+          losing data. In this activity, since all three nodes are on the same host with no artificial lag, the highest-priority
+          node (<code>:27018</code>, priority=3) will reliably win every election.
+        </p>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /.page-wrapper -->
+
+<div id="toast-container"></div>
+
+    </div>
+  </main>
+</div>
+
+<script type="module">
+  import {
+    fetchReplicaSetStatus,
+    triggerStepDown,
+    insertReplicaSetTest,
+    verifyReplication,
+    fetchFailoverLog
+  } from './js/api.js';
+
+  // ── Helpers ──────────────────────────────────────────────────
+
+  function stateBadge(state) {
+    const s = (state || '').toUpperCase();
+    if (s === 'PRIMARY')   return `<span style="background:rgba(0,212,255,0.15);color:var(--accent-cyan);border:1px solid rgba(0,212,255,0.4);padding:0.2rem 0.6rem;border-radius:4px;font-size:0.78rem;font-weight:700;">PRIMARY</span>`;
+    if (s === 'SECONDARY') return `<span style="background:rgba(0,255,136,0.12);color:var(--accent-green);border:1px solid rgba(0,255,136,0.35);padding:0.2rem 0.6rem;border-radius:4px;font-size:0.78rem;font-weight:700;">SECONDARY</span>`;
+    if (s === 'ARBITER')   return `<span style="background:rgba(255,170,0,0.12);color:var(--accent-amber);border:1px solid rgba(255,170,0,0.35);padding:0.2rem 0.6rem;border-radius:4px;font-size:0.78rem;font-weight:700;">ARBITER</span>`;
+    return `<span style="background:rgba(255,68,68,0.12);color:var(--accent-red);border:1px solid rgba(255,68,68,0.35);padding:0.2rem 0.6rem;border-radius:4px;font-size:0.78rem;font-weight:700;">${s || 'UNKNOWN'}</span>`;
+  }
+
+  function healthDot(h) {
+    const ok = Number(h) === 1;
+    return `<span style="color:${ok ? 'var(--accent-green)' : 'var(--accent-red)'};">${ok ? '● Healthy' : '● Down'}</span>`;
+  }
+
+  function logToConsole(consoleId, html) {
+    const term = document.getElementById(consoleId);
+    const line = document.createElement('div');
+    line.style.marginBottom = '0.3rem';
+    line.innerHTML = html;
+    term.appendChild(line);
+    term.scrollTop = term.scrollHeight;
+  }
+
+  function showToast(msg, type = 'info') {
+    const tc = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    const color = type === 'error' ? 'var(--accent-red)' : type === 'success' ? 'var(--accent-green)' : 'var(--accent-cyan)';
+    t.style.cssText = `background:var(--card-bg);border:1px solid ${color};color:var(--text-primary);padding:0.75rem 1rem;border-radius:6px;margin-top:0.5rem;font-size:0.85rem;`;
+    t.textContent = msg;
+    tc.appendChild(t);
+    setTimeout(() => t.remove(), 4000);
+  }
+
+  function renderMembersTable(members) {
+    const rows = members.map(m => {
+      const isPrimary = (m.stateStr || m.state || '').toUpperCase() === 'PRIMARY';
+      return `<tr style="${isPrimary ? 'background:rgba(0,212,255,0.06);' : ''}">
+        <td>${m._id ?? '-'}</td>
+        <td><code style="color:${isPrimary ? 'var(--accent-cyan)' : 'var(--text-primary)'};">${m.name || m.host || '-'}</code>${isPrimary ? ' <i class="fas fa-crown" style="color:var(--accent-cyan);font-size:0.75rem;" title="PRIMARY"></i>' : ''}</td>
+        <td>${stateBadge(m.stateStr || m.state)}</td>
+        <td>${healthDot(m.health)}</td>
+        <td>${m.uptime !== undefined ? m.uptime + 's' : '-'}</td>
+        <td>${m.priority !== undefined ? m.priority : '-'}</td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="table-wrapper"><table>
+      <thead><tr><th>ID</th><th>Host</th><th>State</th><th>Health</th><th>Uptime</th><th>Priority</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  }
+
+  // ── Lab 8.1: Refresh Status ──────────────────────────────────
+
+  window.refreshReplicaSetStatus = async function() {
+    const btn = document.getElementById('btn-refresh-status');
+    const container = document.getElementById('rs-status-container');
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Loading...`;
+    container.innerHTML = `<div style="color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-spinner fa-spin"></i> Fetching replica set status...</div>`;
+
+    try {
+      const data = await fetchReplicaSetStatus();
+      const members = data.members || [];
+      if (!members.length) throw new Error('No members returned');
+
+      container.innerHTML = `
+        <div style="margin-bottom:0.75rem;font-size:0.85rem;color:var(--text-muted);">
+          <i class="fas fa-clock"></i> Last updated: <strong style="color:var(--text-primary);">${new Date().toLocaleTimeString()}</strong>
+          &nbsp;|&nbsp; Set: <strong style="color:var(--accent-cyan);">${data.set || 'rs0'}</strong>
+        </div>
+        ${renderMembersTable(members)}`;
+    } catch (err) {
+      const is503 = err.message.includes('503') || err.message.toLowerCase().includes('not running') || err.message.toLowerCase().includes('no replica');
+      container.innerHTML = `
+        <div style="background:rgba(255,68,68,0.06);border:1px solid rgba(255,68,68,0.3);padding:1rem;border-radius:var(--radius-sm);color:var(--accent-red);font-size:0.85rem;">
+          <i class="fas fa-exclamation-circle"></i>
+          ${is503
+            ? '<strong>No replica set running.</strong> Start Docker containers and run <code>init_replicaset.js</code> first.'
+            : `<strong>Error:</strong> ${err.message}`}
+        </div>`;
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fas fa-sync-alt"></i> Refresh Status`;
+  };
+
+  // ── Lab 8.1: Insert Test Doc ─────────────────────────────────
+
+  window.insertTestDoc = async function() {
+    const r = document.getElementById('insert-result');
+    r.style.display = 'block';
+    r.innerHTML = `<div style="color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Inserting...</div>`;
+    try {
+      const data = await insertReplicaSetTest();
+      r.innerHTML = `
+        <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.25);padding:0.75rem 1rem;border-radius:var(--radius-sm);">
+          <div style="color:var(--accent-green);font-weight:600;margin-bottom:0.3rem;"><i class="fas fa-check-circle"></i> Document inserted successfully</div>
+          <div style="font-size:0.83rem;color:#94a3b8;">Inserted <code>_id</code>: <code style="color:var(--accent-cyan);">${data.inserted_id || data._id || JSON.stringify(data)}</code></div>
+        </div>`;
+    } catch (err) {
+      r.innerHTML = `<div style="color:var(--accent-red);font-size:0.84rem;"><i class="fas fa-times-circle"></i> ${err.message}</div>`;
+    }
+  };
+
+  // ── Lab 8.1: Verify Replication ──────────────────────────────
+
+  window.verifyAllNodes = async function() {
+    const r = document.getElementById('verify-result');
+    r.style.display = 'block';
+    r.innerHTML = `<div style="color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Verifying across all nodes...</div>`;
+    try {
+      const data = await verifyReplication();
+      const rows = (data.nodes || data.results || []).map(n => `<tr>
+        <td><code>${n.host}</code></td>
+        <td>${stateBadge(n.state)}</td>
+        <td style="text-align:center;font-size:1.1rem;">${n.found ? '<span style="color:var(--accent-green);">✓</span>' : '<span style="color:var(--accent-red);">✗</span>'}</td>
+        <td style="font-size:0.78rem;color:#94a3b8;">${n.preview || (n.doc ? JSON.stringify(n.doc).substring(0, 60) + '…' : '-')}</td>
+      </tr>`).join('');
+
+      r.innerHTML = `<div class="table-wrapper"><table>
+        <thead><tr><th>Host</th><th>State</th><th>Found</th><th>Doc Preview</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No nodes data returned</td></tr>'}</tbody>
+      </table></div>`;
+    } catch (err) {
+      r.innerHTML = `<div style="color:var(--accent-red);font-size:0.84rem;"><i class="fas fa-times-circle"></i> ${err.message}</div>`;
+    }
+  };
+
+  // ── Lab 8.2: Step Down ───────────────────────────────────────
+
+  window.doStepDown = async function() {
+    const btn = document.getElementById('btn-stepdown');
+    const r = document.getElementById('stepdown-result');
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Stepping Down...`;
+    r.style.display = 'block';
+    r.innerHTML = `<span style="color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Triggering stepdown...</span>`;
+    try {
+      const data = await triggerStepDown();
+      r.innerHTML = `<span style="color:var(--accent-green);"><i class="fas fa-check-circle"></i> ${data.message || 'Stepdown initiated. Election in progress...'}</span>`;
+      showToast('Stepdown triggered — watch the failover monitor', 'success');
+    } catch (err) {
+      // stepdown causes a brief disconnect, which may appear as an error
+      if (err.message.includes('not master') || err.message.includes('stepdown') || err.message.includes('502') || err.message.includes('503')) {
+        r.innerHTML = `<span style="color:var(--accent-green);"><i class="fas fa-check-circle"></i> Stepdown triggered successfully. Election underway.</span>`;
+      } else {
+        r.innerHTML = `<span style="color:var(--accent-red);"><i class="fas fa-times-circle"></i> ${err.message}</span>`;
+      }
+    }
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fas fa-arrow-down"></i> Step Down Primary`;
+  };
+
+  // ── Lab 8.2: Live Failover Monitor ──────────────────────────
+
+  let failoverInterval = null;
+  let failoverLastPrimary = null;
+  let failoverSeconds = 0;
+  const FAILOVER_POLL_MS = 5000;
+  const FAILOVER_MAX_S = 60;
+
+  window.toggleFailoverMonitor = function() {
+    const btn = document.getElementById('btn-toggle-failover');
+    if (failoverInterval) {
+      clearInterval(failoverInterval);
+      failoverInterval = null;
+      failoverLastPrimary = null;
+      failoverSeconds = 0;
+      btn.innerHTML = `<i class="fas fa-play"></i> Start Monitoring`;
+      btn.classList.remove('btn-danger');
+      btn.classList.add('btn-primary');
+      logToConsole('failover-console', `<span style="color:var(--text-muted);">[Stopped] Monitoring halted.</span>`);
+    } else {
+      btn.innerHTML = `<i class="fas fa-stop"></i> Stop`;
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-danger');
+      failoverLastPrimary = null;
+      failoverSeconds = 0;
+      runFailoverTick();
+      failoverInterval = setInterval(() => {
+        failoverSeconds += FAILOVER_POLL_MS / 1000;
+        if (failoverSeconds >= FAILOVER_MAX_S) {
+          clearInterval(failoverInterval);
+          failoverInterval = null;
+          btn.innerHTML = `<i class="fas fa-play"></i> Start Monitoring`;
+          btn.classList.remove('btn-danger');
+          btn.classList.add('btn-primary');
+          logToConsole('failover-console', `<span style="color:var(--accent-amber);">[Auto-stopped] 60 second limit reached.</span>`);
+          return;
+        }
+        runFailoverTick();
+      }, FAILOVER_POLL_MS);
+    }
+  };
+
+  async function runFailoverTick() {
+    const now = new Date().toLocaleTimeString();
+    try {
+      const data = await fetchReplicaSetStatus();
+      const members = data.members || [];
+      const primary = members.find(m => (m.stateStr || m.state || '').toUpperCase() === 'PRIMARY');
+      const primaryHost = primary ? (primary.name || primary.host) : 'None';
+
+      // Detect failover
+      if (failoverLastPrimary !== null && failoverLastPrimary !== primaryHost) {
+        logToConsole('failover-console',
+          `<span style="color:var(--accent-red);font-weight:700;">*** FAILOVER: ${failoverLastPrimary} → ${primaryHost} ***</span>`);
+      }
+      failoverLastPrimary = primaryHost;
+
+      const stateStr = members.map(m =>
+        `<span style="color:${(m.stateStr||'').toUpperCase() === 'PRIMARY' ? 'var(--accent-cyan)' : (m.stateStr||'').toUpperCase() === 'SECONDARY' ? 'var(--accent-green)' : 'var(--accent-amber)'};">${m.name || m.host}=${m.stateStr || m.state}</span>`
+      ).join(' &nbsp;│&nbsp; ');
+
+      logToConsole('failover-console',
+        `[${now}] PRIMARY: <strong style="color:var(--accent-cyan);">${primaryHost}</strong> &nbsp;|&nbsp; ${stateStr}`);
+    } catch (err) {
+      logToConsole('failover-console',
+        `[${now}] <span style="color:var(--accent-red);">[Error] ${err.message}</span>`);
+    }
+  }
+
+  // ── Lab 8.2: Failover Log ────────────────────────────────────
+
+  window.loadFailoverLog = async function() {
+    const c = document.getElementById('failover-log-container');
+    c.innerHTML = `<div style="color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-spinner fa-spin"></i> Loading log...</div>`;
+    try {
+      const data = await fetchFailoverLog();
+      const lines = (data.lines || data.log || '').trim();
+      if (!lines) {
+        c.innerHTML = `<div style="color:var(--text-muted);font-size:0.85rem;padding:0.75rem;background:rgba(0,0,0,0.3);border-radius:4px;">
+          Run <code>activity_8_2.py</code> first to generate a failover log.
+        </div>`;
+      } else {
+        const escaped = lines.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/FAILOVER/g, '<span style="color:var(--accent-red);font-weight:700;">FAILOVER</span>')
+          .replace(/PRIMARY/g, '<span style="color:var(--accent-cyan);">PRIMARY</span>')
+          .replace(/SECONDARY/g, '<span style="color:var(--accent-green);">SECONDARY</span>');
+        c.innerHTML = `<pre style="background:#050811;padding:1rem;border-radius:6px;font-family:var(--font-mono);font-size:0.78rem;color:#cbd5e1;overflow-y:auto;max-height:300px;border:1px solid var(--card-border);line-height:1.6;">${escaped}</pre>`;
+      }
+    } catch (err) {
+      c.innerHTML = `<div style="color:var(--accent-red);font-size:0.84rem;padding:0.75rem;background:rgba(255,68,68,0.06);border:1px solid rgba(255,68,68,0.3);border-radius:4px;">
+        <i class="fas fa-times-circle"></i> ${err.message}
+      </div>`;
+    }
+  };
+
+  // ── Activity 8.2: Check Current Primary ─────────────────────
+
+  let currentPrimaryCache = null;
+
+  window.checkCurrentPrimary = async function() {
+    const r = document.getElementById('check-primary-result');
+    r.style.display = 'block';
+    r.innerHTML = `<span style="color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Fetching...</span>`;
+    try {
+      const data = await fetchReplicaSetStatus();
+      const members = data.members || [];
+      const primary = members.find(m => (m.stateStr || m.state || '').toUpperCase() === 'PRIMARY');
+      currentPrimaryCache = primary ? (primary.name || primary.host) : null;
+      r.innerHTML = `<span style="color:var(--accent-green);"><i class="fas fa-check-circle"></i> Current PRIMARY: <code style="color:var(--accent-cyan);">${currentPrimaryCache || 'None detected'}</code></span>`;
+    } catch (err) {
+      r.innerHTML = `<span style="color:var(--accent-red);"><i class="fas fa-times-circle"></i> ${err.message}</span>`;
+    }
+  };
+
+  // ── Activity 8.2: Make Prediction ───────────────────────────
+
+  window.makePrediction = async function() {
+    const r = document.getElementById('prediction-result');
+    r.style.display = 'block';
+    // Priority config from init_replicaset_priority.js: 27018 → priority 3 (highest)
+    r.innerHTML = `
+      <div style="background:rgba(255,170,0,0.07);border:1px solid rgba(255,170,0,0.3);padding:0.6rem 0.85rem;border-radius:4px;">
+        <div style="color:var(--accent-amber);font-weight:600;margin-bottom:0.3rem;"><i class="fas fa-lightbulb"></i> Prediction (based on priorities):</div>
+        <div style="font-size:0.82rem;color:#cbd5e1;">
+          After stepdown, the next PRIMARY will be <code style="color:var(--accent-green);">host.docker.internal:27018</code>
+          because it has <strong>priority = 3</strong> (highest). MongoDB's election protocol guarantees the highest-priority
+          eligible member wins if its oplog is current.
+        </div>
+      </div>`;
+  };
+
+  // ── Activity 8.2: Verify Prediction ─────────────────────────
+
+  window.verifyPrediction = async function() {
+    const r = document.getElementById('verify-prediction-result');
+    r.style.display = 'block';
+    r.innerHTML = `<span style="color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Checking actual primary...</span>`;
+    try {
+      const data = await fetchReplicaSetStatus();
+      const members = data.members || [];
+      const primary = members.find(m => (m.stateStr || m.state || '').toUpperCase() === 'PRIMARY');
+      const actualPrimary = primary ? (primary.name || primary.host) : 'None';
+      const predicted = 'host.docker.internal:27018';
+      const correct = actualPrimary.includes('27018');
+
+      r.innerHTML = `
+        <div style="background:${correct ? 'rgba(0,255,136,0.07)' : 'rgba(255,68,68,0.07)'};border:1px solid ${correct ? 'rgba(0,255,136,0.3)' : 'rgba(255,68,68,0.3)'};padding:0.75rem 1rem;border-radius:4px;">
+          <div style="font-weight:600;color:${correct ? 'var(--accent-green)' : 'var(--accent-red)'};margin-bottom:0.4rem;">
+            <i class="fas fa-${correct ? 'check' : 'times'}-circle"></i>
+            ${correct ? '✓ Prediction CORRECT!' : '✗ Prediction was incorrect'}
+          </div>
+          <div style="font-size:0.82rem;color:#cbd5e1;">
+            <div>Predicted: <code style="color:var(--accent-amber);">${predicted}</code></div>
+            <div>Actual: <code style="color:var(--accent-cyan);">${actualPrimary}</code></div>
+            ${!correct ? `<div style="margin-top:0.4rem;color:var(--text-muted);">This can happen if :27018 is offline — in that case :27019 (priority=2) wins instead.</div>` : ''}
+          </div>
+        </div>`;
+    } catch (err) {
+      r.innerHTML = `<span style="color:var(--accent-red);"><i class="fas fa-times-circle"></i> ${err.message}</span>`;
+    }
+  };
+
+</script>
+<script type="module" src="js/sidebar.js"></script>
+</body>
+</html>

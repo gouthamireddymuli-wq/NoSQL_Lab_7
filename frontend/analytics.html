@@ -6,17 +6,21 @@
   <title>CTI Platform — Schema & Working Set Analytics</title>
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+      </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
 <!-- Navigation -->
 <nav class="navbar">
-  <div class="navbar-brand">
+  <div style="display:flex;align-items:center;"><button id="sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar"><i class="fas fa-bars"></i></button><div class="navbar-brand">
     <i class="fas fa-shield-virus"></i>
     CTI Platform
     <span class="brand-dot"></span>
-  </div>
+  </div></div>
   <ul class="navbar-nav">
     <li><a href="index.html"><i class="fas fa-th-large"></i> Dashboard</a></li>
     <li><a href="indicators.html"><i class="fas fa-crosshairs"></i> Threat Indicators</a></li>
@@ -24,6 +28,10 @@
     <li><a href="actors.html"><i class="fas fa-user-secret"></i> Threat Actors</a></li>
     <li><a href="analytics.html" class="active"><i class="fas fa-chart-bar"></i> Analytics</a></li>
     <li><a href="lab_reports.html"><i class="fas fa-flask"></i> Lab Reports</a></li>
+    <li><a href="labs.html"><i class="fas fa-book-open"></i> Labs Portal</a></li>
+    <li><a href="lab8_reports.html"><i class="fas fa-database"></i> Lab 8</a></li>
+    <li><a href="lab9_reports.html"><i class="fas fa-network-wired"></i> Lab 9</a></li>
+
   </ul>
   <div class="navbar-status">
     <div class="status-indicator"></div>
@@ -31,8 +39,10 @@
   </div>
 </nav>
 
-<!-- Page Content -->
-<div class="page-wrapper">
+<div class="app-layout">
+  <aside id="app-sidebar" class="sidebar"></aside>
+  <main class="main-content">
+    <div class="page-wrapper">
 
   <!-- Header -->
   <div class="page-header">
@@ -315,5 +325,6 @@
   // Load everything on init
   window.loadAllAnalytics();
 </script>
+<script type="module" src="js/sidebar.js"></script>
 </body>
 </html>

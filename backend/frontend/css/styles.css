@@ -1012,3 +1012,178 @@ pre {
 @media (max-width: 480px) {
   .stat-grid { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   App Layout with Sidebar (Labs 7 - 18 Navigation)
+   ============================================================ */
+.app-layout {
+  display: flex;
+  min-height: calc(100vh - 60px);
+}
+
+.sidebar {
+  width: 275px;
+  background: #060a14;
+  border-right: 1px solid var(--card-border);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 60px;
+  height: calc(100vh - 60px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: transform 0.3s ease, margin 0.3s ease;
+  z-index: 99;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+.sidebar::-webkit-scrollbar-track {
+  background: #060a14;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background: #1f2937;
+  border-radius: 3px;
+}
+
+.sidebar-section {
+  padding: 0.75rem 0.5rem 0.25rem;
+  border-bottom: 1px solid rgba(31, 41, 55, 0.4);
+}
+
+.sidebar-section:last-child {
+  border-bottom: none;
+}
+
+.sidebar-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 0 0.5rem 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-nav {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.42rem 0.65rem;
+  border-radius: var(--radius-sm);
+  color: #94a3b8;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: var(--transition);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-link i {
+  width: 16px;
+  text-align: center;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+
+.sidebar-link:hover {
+  background: rgba(0, 212, 255, 0.08);
+  color: var(--accent-cyan);
+  text-decoration: none;
+}
+
+.sidebar-link:hover i {
+  color: var(--accent-cyan);
+}
+
+.sidebar-link.active {
+  background: rgba(0, 212, 255, 0.12);
+  color: var(--accent-cyan);
+  font-weight: 600;
+  border-left: 3px solid var(--accent-cyan);
+}
+
+.sidebar-link.active i {
+  color: var(--accent-cyan);
+}
+
+.sidebar-badge {
+  margin-left: auto;
+  font-size: 0.62rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.sidebar-badge-done {
+  background: rgba(0, 255, 136, 0.15);
+  color: var(--accent-green);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+}
+
+.sidebar-badge-new {
+  background: rgba(0, 212, 255, 0.15);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.sidebar-badge-adv {
+  background: rgba(155, 89, 182, 0.2);
+  color: #c084fc;
+  border: 1px solid rgba(155, 89, 182, 0.4);
+}
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  padding: 0.25rem 0.5rem;
+  margin-right: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+}
+
+.sidebar-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent-cyan);
+}
+
+@media (max-width: 992px) {
+  .sidebar {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+}

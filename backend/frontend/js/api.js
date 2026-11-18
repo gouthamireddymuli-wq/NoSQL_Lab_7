@@ -117,3 +117,25 @@ export async function fetchCacheHitRatio() {
 export async function checkNewReports() {
   return apiRequest('/monitor/check-new-reports', { method: 'POST' });
 }
+
+/* ── Replica Set (Lab 8) ─────────────────────────────────────── */
+
+export async function fetchReplicaSetStatus() {
+  return apiRequest('/replicaset/status');
+}
+
+export async function triggerStepDown() {
+  return apiRequest('/replicaset/stepdown', { method: 'POST' });
+}
+
+export async function insertReplicaSetTest() {
+  return apiRequest('/replicaset/insert-test');
+}
+
+export async function verifyReplication() {
+  return apiRequest('/replicaset/verify-replication');
+}
+
+export async function fetchFailoverLog() {
+  return apiRequest('/replicaset/failover-log');
+}

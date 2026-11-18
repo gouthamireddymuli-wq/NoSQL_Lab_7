@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CTI Platform — Lab 13: Cloud & Container Deployment</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <div style="display:flex;align-items:center;">
+    <button id="sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar"><i class="fas fa-bars"></i></button>
+    <div class="navbar-brand"><i class="fas fa-shield-virus"></i> CTI Platform <span class="brand-dot"></span></div>
+  </div>
+  <ul class="navbar-nav">
+    <li><a href="index.html"><i class="fas fa-th-large"></i> Dashboard</a></li>
+    <li><a href="indicators.html"><i class="fas fa-crosshairs"></i> Indicators</a></li>
+    <li><a href="reports.html"><i class="fas fa-file-alt"></i> Reports</a></li>
+    <li><a href="actors.html"><i class="fas fa-user-secret"></i> Threat Actors</a></li>
+    <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+    <li><a href="labs.html" class="active"><i class="fas fa-book-open"></i> Labs Portal</a></li>
+  </ul>
+  <div class="navbar-status"><div class="status-indicator"></div><span>Live</span></div>
+</nav>
+
+<div class="app-layout">
+  <aside id="app-sidebar" class="sidebar"></aside>
+
+  <main class="main-content">
+    <div class="page-wrapper" style="max-width:1200px;">
+      
+      <div class="page-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+            <span class="badge badge-purple">Chapter 13</span>
+            <span class="badge badge-low">Containers &amp; Cloud</span>
+          </div>
+          <h1 class="page-title"><i class="fas fa-cubes"></i> Lab 13: Cloud Deployment, Docker &amp; Kubernetes StatefulSets</h1>
+          <p class="page-subtitle">Orchestrating production MongoDB replica sets with Docker Compose, Kubernetes StatefulSets, and Terraform Infrastructure as Code</p>
+        </div>
+        <div style="font-size:0.8rem;color:var(--text-muted);text-align:right;">
+          Student: <strong>M Gouthami</strong> (<span style="font-family:var(--font-mono);color:var(--accent-cyan);">24BTRCL130</span>)
+        </div>
+      </div>
+
+      <!-- Container Topologies -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <h3 style="font-size:1.1rem;color:var(--accent-cyan);margin-bottom:0.75rem;">
+          <i class="fas fa-network-wired"></i> 1. Production Topology &amp; Kubernetes StatefulSet Patterns
+        </h3>
+        <p style="font-size:0.88rem;color:#cbd5e1;line-height:1.6;margin-bottom:1rem;">
+          Unlike stateless microservices, deploying a distributed database like MongoDB requires stateful identity, stable network hostnames, and persistent storage attached to each peer.
+        </p>
+
+        <div class="grid-2">
+          <div style="background:rgba(0,0,0,0.3);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--card-border);">
+            <h4 style="color:var(--accent-green);font-size:0.9rem;margin-bottom:0.5rem;">Kubernetes StatefulSet Architecture:</h4>
+            <ul style="padding-left:1.2rem;font-size:0.82rem;color:#cbd5e1;line-height:1.7;">
+              <li><strong>Stable Network IDs:</strong> Pods receive persistent ordinals (<code>mongo-0</code>, <code>mongo-1</code>, <code>mongo-2</code>) resolving via headless Kubernetes service DNS.</li>
+              <li><strong>Persistent Volume Claim Templates:</strong> Each pod automatically binds to dedicated cloud block storage (EBS gp3 or GCE PD).</li>
+            </ul>
+          </div>
+          <div style="background:rgba(0,0,0,0.3);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--card-border);">
+            <h4 style="color:var(--accent-cyan);font-size:0.9rem;margin-bottom:0.5rem;">Docker Compose Multi-Node Replica:</h4>
+            <ul style="padding-left:1.2rem;font-size:0.82rem;color:#cbd5e1;line-height:1.7;">
+              <li>Deploys 3 separate containers on an isolated bridge network with healthcheck commands.</li>
+              <li>Initialization service executes <code>rs.initiate()</code> once all containers are healthy.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kubernetes Manifest Example -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <h3 style="font-size:1.1rem;color:var(--accent-green);margin-bottom:0.75rem;">
+          <i class="fas fa-file-code"></i> 2. Kubernetes StatefulSet Specification
+        </h3>
+        <pre style="background:#050811;padding:1rem;border-radius:var(--radius-sm);color:#38bdf8;font-size:0.82rem;overflow-x:auto;"><code>apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo-cti-cluster
+spec:
+  serviceName: "mongo-headless"
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:8.0
+        command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - name: mongo-data
+          mountPath: /data/db
+  volumeClaimTemplates:
+  - metadata:
+      name: mongo-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 100Gi</code></pre>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script type="module">
+  import { initSidebar } from './js/sidebar.js';
+  initSidebar('lab-13');
+</script>
+</body>
+</html>

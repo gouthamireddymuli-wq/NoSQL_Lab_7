@@ -11,11 +11,11 @@
 
 <!-- Navigation -->
 <nav class="navbar">
-  <div class="navbar-brand">
+  <div style="display:flex;align-items:center;"><button id="sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar"><i class="fas fa-bars"></i></button><div class="navbar-brand">
     <i class="fas fa-shield-virus"></i>
     CTI Platform
     <span class="brand-dot"></span>
-  </div>
+  </div></div>
   <ul class="navbar-nav">
     <li><a href="index.html"><i class="fas fa-th-large"></i> Dashboard</a></li>
     <li><a href="indicators.html"><i class="fas fa-crosshairs"></i> Threat Indicators</a></li>
@@ -23,6 +23,10 @@
     <li><a href="actors.html"><i class="fas fa-user-secret"></i> Threat Actors</a></li>
     <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a></li>
     <li><a href="lab_reports.html" class="active"><i class="fas fa-flask"></i> Lab Reports</a></li>
+    <li><a href="labs.html"><i class="fas fa-book-open"></i> Labs Portal</a></li>
+    <li><a href="lab8_reports.html"><i class="fas fa-database"></i> Lab 8</a></li>
+    <li><a href="lab9_reports.html"><i class="fas fa-network-wired"></i> Lab 9</a></li>
+
   </ul>
   <div class="navbar-status">
     <div class="status-indicator"></div>
@@ -30,8 +34,10 @@
   </div>
 </nav>
 
-<!-- Page Content -->
-<div class="page-wrapper" style="max-width:1200px;">
+<div class="app-layout">
+  <aside id="app-sidebar" class="sidebar"></aside>
+  <main class="main-content">
+    <div class="page-wrapper" style="max-width:1200px;">
 
   <!-- Header -->
   <div class="page-header">
@@ -354,6 +360,10 @@ On this host: 7,879,000,064 bytes (7.34 GB)</code></pre>
 
 <div id="toast-container"></div>
 
+    </div>
+  </main>
+</div>
+
 <script type="module">
   import { fetchCacheHitRatio, checkNewReports } from './js/api.js';
   import { showToast } from './js/utils.js';
@@ -415,5 +425,6 @@ On this host: 7,879,000,064 bytes (7.34 GB)</code></pre>
     term.scrollTop = term.scrollHeight;
   }
 </script>
+<script type="module" src="js/sidebar.js"></script>
 </body>
 </html>

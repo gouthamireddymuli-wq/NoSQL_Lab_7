@@ -11,6 +11,9 @@ from routes.reports import reports_bp
 from routes.actors import actors_bp
 from routes.analytics import analytics_bp
 from routes.monitor import monitor_bp
+from routes.replicaset import replicaset_bp
+from routes.lab9 import lab9_bp
+from routes.labs import labs_bp
 
 # Auto-detect frontend directory whether running from root, backend/, or Vercel
 local_frontend = os.path.abspath(os.path.join(os.path.dirname(__file__), "frontend"))
@@ -35,6 +38,9 @@ app.register_blueprint(reports_bp)
 app.register_blueprint(actors_bp)
 app.register_blueprint(analytics_bp)
 app.register_blueprint(monitor_bp)
+app.register_blueprint(replicaset_bp)
+app.register_blueprint(lab9_bp)
+app.register_blueprint(labs_bp)
 
 
 @app.route("/")

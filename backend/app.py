@@ -2,6 +2,11 @@
 Main Flask application – registers all blueprints, enables CORS, and serves frontend static assets.
 """
 import os
+import sys
+
+# Ensure backend directory is in sys.path for Vercel serverless environment
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 

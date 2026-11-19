@@ -10,7 +10,7 @@ import datetime
 # Connection
 # ---------------------------------------------------------------------------
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
-client = MongoClient(MONGO_URI)
+client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
 db = client["cti_platform"]
 
 # ---------------------------------------------------------------------------

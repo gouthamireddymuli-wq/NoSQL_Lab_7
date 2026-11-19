@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CTI Platform — Complete Labs Portal (Labs 7 to 18)</title>
+  <title>CTI Platform — Complete Labs Portal (Labs 1 to 18 &amp; Appendix A)</title>
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
@@ -27,11 +27,12 @@
     <li><a href="reports.html"><i class="fas fa-file-alt"></i> Reports</a></li>
     <li><a href="actors.html"><i class="fas fa-user-secret"></i> Threat Actors</a></li>
     <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a></li>
-    <li><a href="labs.html" class="active"><i class="fas fa-book-open"></i> Labs Portal (7-18)</a></li>
+    <li><a href="labs.html" class="active"><i class="fas fa-book-open"></i> Labs Portal (1-18)</a></li>
+    <li><a href="chatbot.html"><i class="fas fa-robot"></i> AI Threat Analyst</a></li>
   </ul>
   <div class="navbar-status">
     <div class="status-indicator"></div>
-    <span>Live · Atlas 8.0</span>
+    <span>Live · MongoDB 8.0</span>
   </div>
 </nav>
 
@@ -50,10 +51,10 @@
         <div>
           <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
             <span class="badge badge-type"><i class="fas fa-graduation-cap"></i> Complete NoSQL Curriculum</span>
-            <span class="badge badge-low"><i class="fas fa-check-circle"></i> 12 Chapters Integrated</span>
+            <span class="badge badge-low"><i class="fas fa-check-circle"></i> 18 Chapters + Appendix A Integrated</span>
           </div>
-          <h1 class="page-title"><i class="fas fa-book-open"></i> NoSQL MongoDB Labs Curriculum (Labs 7 to 18)</h1>
-          <p class="page-subtitle">Production Cyber Threat Intelligence Architecture — End-to-end practical implementations from Schema Design to AI Vector Search &amp; Comparative Capstone.</p>
+          <h1 class="page-title"><i class="fas fa-book-open"></i> NoSQL MongoDB Labs Curriculum (Labs 1 to 18 &amp; Appendix A)</h1>
+          <p class="page-subtitle">Production Cyber Threat Intelligence Architecture — Complete curriculum from NoSQL Foundations to AI Vector RAG &amp; Autonomous Mitigation Bots.</p>
         </div>
 
         <!-- Student ID Card -->
@@ -74,14 +75,14 @@
         <div class="stat-card">
           <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
           <div class="stat-info">
-            <div class="stat-value">12</div>
-            <div class="stat-label">Total Lab Modules (7-18)</div>
+            <div class="stat-value">19</div>
+            <div class="stat-label">Total Modules (1-18 + App A)</div>
           </div>
         </div>
         <div class="stat-card stat-green">
           <div class="stat-icon"><i class="fas fa-check-double"></i></div>
           <div class="stat-info">
-            <div class="stat-value">24+</div>
+            <div class="stat-value">38+</div>
             <div class="stat-label">Hands-On Activities</div>
           </div>
         </div>
@@ -93,10 +94,10 @@
           </div>
         </div>
         <div class="stat-card stat-purple">
-          <div class="stat-icon"><i class="fas fa-cloud"></i></div>
+          <div class="stat-icon"><i class="fas fa-robot"></i></div>
           <div class="stat-info">
-            <div class="stat-value">MongoDB 8.0</div>
-            <div class="stat-label">Cloud Atlas Cluster</div>
+            <div class="stat-value">AI Bot Active</div>
+            <div class="stat-label">RAG + Vulnerability Bot</div>
           </div>
         </div>
       </div>
@@ -104,23 +105,29 @@
       <!-- Category Filter Pills -->
       <div class="card" style="margin-bottom:1.5rem;padding:0.75rem 1rem;">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;">
-          <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;">
             <span style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;font-weight:700;margin-right:0.25rem;">
               <i class="fas fa-filter"></i> Filter:
             </span>
-            <button class="btn btn-primary btn-sm filter-btn active" data-category="all" onclick="filterLabs('all')">All Labs (12)</button>
-            <button class="btn btn-ghost btn-sm filter-btn" data-category="Data Modeling" onclick="filterLabs('Data Modeling')">Data &amp; Modeling</button>
-            <button class="btn btn-ghost btn-sm filter-btn" data-category="Availability" onclick="filterLabs('Availability')">HA &amp; Replication</button>
-            <button class="btn btn-ghost btn-sm filter-btn" data-category="Consistency" onclick="filterLabs('Consistency')">CAP &amp; Write Concerns</button>
-            <button class="btn btn-ghost btn-sm filter-btn" data-category="Transactions" onclick="filterLabs('Transactions')">ACID Transactions</button>
+            <button class="btn btn-primary btn-sm filter-btn active" data-category="all" onclick="filterLabs('all')">All (19)</button>
+            <button class="btn btn-ghost btn-sm filter-btn" data-category="Foundations" onclick="filterLabs('Foundations')">Foundations</button>
+            <button class="btn btn-ghost btn-sm filter-btn" data-category="CRUD" onclick="filterLabs('CRUD')">CRUD</button>
+            <button class="btn btn-ghost btn-sm filter-btn" data-category="Data Modeling" onclick="filterLabs('Data Modeling')">Data Modeling</button>
+            <button class="btn btn-ghost btn-sm filter-btn" data-category="Analytics" onclick="filterLabs('Analytics')">Analytics</button>
+            <button class="btn btn-ghost btn-sm filter-btn" data-category="Performance" onclick="filterLabs('Performance')">Performance</button>
+            <button class="btn btn-ghost btn-sm filter-btn" data-category="Availability" onclick="filterLabs('Availability')">HA &amp; Repl</button>
+            <button class="btn btn-ghost btn-sm filter-btn" data-category="Consistency" onclick="filterLabs('Consistency')">CAP</button>
+            <button class="btn btn-ghost btn-sm filter-btn" data-category="Transactions" onclick="filterLabs('Transactions')">Transactions</button>
             <button class="btn btn-ghost btn-sm filter-btn" data-category="Scalability" onclick="filterLabs('Scalability')">Sharding</button>
-            <button class="btn btn-ghost btn-sm filter-btn" data-category="Security" onclick="filterLabs('Security')">Security &amp; RBAC</button>
-            <button class="btn btn-ghost btn-sm filter-btn" data-category="AI & Vector" onclick="filterLabs('AI & Vector')">AI &amp; RAG</button>
+            <button class="btn btn-ghost btn-sm filter-btn" data-category="Security" onclick="filterLabs('Security')">Security</button>
+            <button class="btn btn-ghost btn-sm filter-btn" data-category="DevOps" onclick="filterLabs('DevOps')">Cloud &amp; DevOps</button>
+            <button class="btn btn-ghost btn-sm filter-btn" data-category="Polyglot" onclick="filterLabs('Polyglot')">Polyglot</button>
+            <button class="btn btn-ghost btn-sm filter-btn" data-category="AI" onclick="filterLabs('AI')">AI &amp; RAG</button>
             <button class="btn btn-ghost btn-sm filter-btn" data-category="Capstone" onclick="filterLabs('Capstone')">Capstone</button>
           </div>
 
           <div style="display:flex;align-items:center;gap:0.5rem;">
-            <input type="text" id="lab-search" class="form-control" placeholder="Search lab title or topic..." style="font-size:0.8rem;padding:0.35rem 0.75rem;width:220px;" oninput="searchLabs(this.value)" />
+            <input type="text" id="lab-search" class="form-control" placeholder="Search lab or chapter..." style="font-size:0.8rem;padding:0.35rem 0.75rem;width:200px;" oninput="searchLabs(this.value)" />
           </div>
         </div>
       </div>
@@ -160,7 +167,15 @@
       const res = await fetch("/api/labs");
       const data = await res.json();
       allLabs = data.labs || [];
-      renderLabs(allLabs);
+
+      // Check URL query filter if present
+      const urlParams = new URLSearchParams(window.location.search);
+      const filter = urlParams.get("filter");
+      if (filter) {
+        window.filterLabs(filter);
+      } else {
+        renderLabs(allLabs);
+      }
     } catch (err) {
       grid.innerHTML = `<div class="error-state">Failed to load labs catalog: ${err.message}</div>`;
     }
@@ -186,6 +201,8 @@
           <div style="font-size:0.8rem;font-weight:700;color:var(--accent-cyan);font-family:var(--font-mono);">${escHtml(v)}</div>
         </div>
       `).join('');
+
+      const reportLink = lab.id === 'appendix-a' ? 'chatbot.html' : (lab.files[lab.files.length - 1] || 'lab_reports.html');
 
       return `
         <div class="card lab-card" style="display:flex;flex-direction:column;justify-content:space-between;transition:transform 0.2s, border-color 0.2s;">
@@ -226,8 +243,8 @@
 
           <!-- Card Actions -->
           <div style="border-top:1px solid var(--card-border);padding-top:0.75rem;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
-            <a href="${lab.files[lab.files.length - 1] || 'lab_reports.html'}" class="btn btn-outline btn-sm" style="flex:1;justify-content:center;">
-              <i class="fas fa-file-alt"></i> Full Report
+            <a href="${reportLink}" class="btn btn-outline btn-sm" style="flex:1;justify-content:center;">
+              <i class="fas fa-file-alt"></i> ${lab.id === 'appendix-a' ? 'Launch Bot' : 'Full Report'}
             </a>
             <button class="btn btn-primary btn-sm" onclick="window.launchLabSimulator('${lab.id}')" style="flex:1;justify-content:center;">
               <i class="fas fa-play"></i> Simulator
@@ -252,7 +269,10 @@
     if (category === "all") {
       renderLabs(allLabs);
     } else {
-      const filtered = allLabs.filter(l => l.category.toLowerCase().includes(category.toLowerCase()));
+      const filtered = allLabs.filter(l => 
+        (l.category || "").toLowerCase().includes(category.toLowerCase()) ||
+        (l.title || "").toLowerCase().includes(category.toLowerCase())
+      );
       renderLabs(filtered);
     }
   };
@@ -317,7 +337,9 @@
       `;
 
       footerEl.innerHTML = `
-        <a href="${lab.files[lab.files.length - 1] || 'lab_reports.html'}" class="btn btn-primary btn-sm"><i class="fas fa-external-link-alt"></i> Go to Full Chapter Report</a>
+        <a href="${lab.id === 'appendix-a' ? 'chatbot.html' : (lab.files[lab.files.length - 1] || 'lab_reports.html')}" class="btn btn-primary btn-sm">
+          <i class="fas fa-external-link-alt"></i> ${lab.id === 'appendix-a' ? 'Go to AI Threat Analyst' : 'Go to Full Chapter Report'}
+        </a>
         <button class="btn btn-ghost btn-sm" onclick="hideModal()">Close</button>
       `;
     } catch (err) {
@@ -329,6 +351,7 @@
   loadLabsCatalog();
 </script>
 
+<script src="js/floating_chat.js"></script>
 <script>
   function hideModal() {
     document.getElementById("modal-overlay").classList.remove("open");

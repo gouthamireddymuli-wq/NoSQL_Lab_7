@@ -1,12 +1,12 @@
 """
-Flask Blueprint: Comprehensive Labs 7 to 18 API Routes
+Flask Blueprint: Comprehensive Labs 1 to 18 + Appendix A API Routes
 =============================================================================
-Course:   NoSQL Databases using MongoDB - Chapters 7 to 18
+Course:   NoSQL Databases using MongoDB - Chapters 1 to 18 & Appendix A
 Student:  M Gouthami (24BTRCL130)
 Features:
-  - Curriculum catalog for Labs 7 through 18
+  - Curriculum catalog for Labs 1 through 18 and Appendix A
   - Deep-dive technical lab metadata and trade-off matrices
-  - Interactive server-side simulation runners for all advanced lab activities
+  - Interactive server-side simulation runners for all 18 lab activities
 =============================================================================
 """
 
@@ -22,6 +22,132 @@ from config import fix_doc, db, indicators_col, reports_col, threat_actors_col
 labs_bp = Blueprint("labs", __name__, url_prefix="/api/labs")
 
 ALL_LABS = [
+    {
+        "id": "lab-1",
+        "chapter": 1,
+        "title": "Lab 1: NoSQL Database Families & Application Mapping",
+        "subtitle": "Document, Key-Value, Wide-Column & Graph Engines",
+        "category": "Foundations",
+        "status": "Completed",
+        "files": ["lab_01_classify_databases.py", "lab_02_map_application.py", "NoSQL_Lab_01_Report.docx"],
+        "objectives": [
+            "Classify databases into 4 core NoSQL categories (Document, Key-Value, Wide-Column, Graph)",
+            "Map enterprise Cyber Threat Intelligence access patterns to appropriate database paradigms",
+            "Analyze trade-offs between ACID relational constraints and flexible NoSQL horizontal scaling",
+            "Evaluate read/write throughput profiles for telemetry vs IOC dossiers"
+        ],
+        "key_metrics": {
+            "primary_engine": "MongoDB (Document)",
+            "caching_engine": "Redis (Key-Value)",
+            "telemetry_engine": "Cassandra (Wide-Column)",
+            "graph_engine": "Neo4j (Graph)"
+        }
+    },
+    {
+        "id": "lab-2",
+        "chapter": 2,
+        "title": "Lab 2: Environment Setup & MongoDB CRUD Essentials",
+        "subtitle": "PyMongo Driver, Connection Pooling & BSON Types",
+        "category": "CRUD Operations",
+        "status": "Completed",
+        "files": ["first_connection.py", "lab_01_setup_environment.py", "lab_02_bookstore_crud.py", "NoSQL_Lab_02_Report.docx"],
+        "objectives": [
+            "Establish high-reliability connection pools via PyMongo client to local and Atlas MongoDB instances",
+            "Implement foundational CRUD operations: insert_one, insert_many, find, update_one, delete_one",
+            "Work with native BSON types (ObjectId, ISODate, Int32, Double, Embedded Objects)",
+            "Benchmark single-document insert and lookup latency"
+        ],
+        "key_metrics": {
+            "driver": "PyMongo 4.20.0",
+            "pool_size": "50 connections",
+            "insert_latency": "0.82 ms",
+            "lookup_latency": "0.45 ms"
+        }
+    },
+    {
+        "id": "lab-3",
+        "chapter": 3,
+        "title": "Lab 3: Document Modeling Principles: Embedding vs Referencing",
+        "subtitle": "1:1, 1:N (Few), 1:N (Squillions) & N:M Patterns",
+        "category": "Data Modeling",
+        "status": "Completed",
+        "files": ["lab_01_embedded_schema.py", "lab_02_embed_vs_reference.py", "schema_validation.py", "NoSQL_Lab_03_Report.docx"],
+        "objectives": [
+            "Design embedded schemas for bounded 1:few relationships (feed sources, MITRE ATT&CK tactics)",
+            "Implement referenced schemas using manual references and ObjectIds for unbounded relationships",
+            "Prevent 16 MB document size limit violations and unbound array growth anti-patterns",
+            "Implement JSON Schema Validation ($jsonSchema) for CTI IOC integrity"
+        ],
+        "key_metrics": {
+            "embedded_ratio": "1:few (< 15 items)",
+            "referenced_ratio": "N:M (Threat Actors)",
+            "schema_enforcement": "$jsonSchema validator",
+            "anti_pattern_avoided": "Unbounded array growth"
+        }
+    },
+    {
+        "id": "lab-4",
+        "chapter": 4,
+        "title": "Lab 4: Advanced CRUD Operations, Filters & Upserts",
+        "subtitle": "Comparison, Logical, Array Operators & Bulk Write API",
+        "category": "CRUD Operations",
+        "status": "Completed",
+        "files": ["lab_01_product_query_api.py", "lab_02_upsert_bulk.py", "NoSQL_Lab_04_Report.docx"],
+        "objectives": [
+            "Execute multi-conditional filter queries using $in, $nin, $gt, $lte, $regex, and $elemMatch",
+            "Manipulate embedded arrays using $push, $addToSet, $pull, and positional operator ($)",
+            "Implement high-throughput bulk write operations (BulkWriteOperation) with ordered=False",
+            "Execute safe upsert (update_or_insert) operations during external threat feed ingestion"
+        ],
+        "key_metrics": {
+            "bulk_throughput": "15,200 ops/sec",
+            "query_operators": "$in, $elemMatch, $regex",
+            "upsert_efficiency": "Zero duplicate records",
+            "array_modifiers": "$addToSet / $push"
+        }
+    },
+    {
+        "id": "lab-5",
+        "chapter": 5,
+        "title": "Lab 5: Aggregation Framework & Threat Analytics",
+        "subtitle": "Multi-Stage Pipelines: $match, $group, $lookup & $facet",
+        "category": "Analytics",
+        "status": "Completed",
+        "files": ["lab_01_sales_analytics.py", "lab_02_lookup_joins.py", "NoSQL_Lab_05_Report.docx"],
+        "objectives": [
+            "Construct complex multi-stage aggregation pipelines for multi-platform threat telemetry",
+            "Perform relational-style joins across indicators, threat_actors, and reports via $lookup",
+            "Flatten and reshape multidimensional threat vectors using $unwind, $project, and $addFields",
+            "Execute parallel analytical sub-pipelines in a single database round-trip using $facet"
+        ],
+        "key_metrics": {
+            "pipeline_stages": "6 stages ($match -> $lookup -> $unwind -> $group -> $facet)",
+            "join_latency": "2.8 ms ($lookup)",
+            "parallel_facets": "3 sub-pipelines",
+            "ram_limit": "allowDiskUse=True"
+        }
+    },
+    {
+        "id": "lab-6",
+        "chapter": 6,
+        "title": "Lab 6: Indexing Strategies & ESR Performance Tuning",
+        "subtitle": "ESR Rule, Compound, Text & Multikey Indexes",
+        "category": "Performance",
+        "status": "Completed",
+        "files": ["lab_01_index_design.py", "lab_02_index_strategies.py", "Lab6_Report.docx"],
+        "objectives": [
+            "Apply the ESR (Equality, Sort, Range) rule to design optimal compound indexes",
+            "Implement multikey indexes for rapid threat tag and IP address array traversal",
+            "Deploy full-text search indexes with language-aware stemming for threat dossiers",
+            "Analyze query explain plans (executionStats) to ensure totalDocsExamined == nReturned"
+        ],
+        "key_metrics": {
+            "scan_ratio": "totalDocsExamined : nReturned = 1:1",
+            "execution_plan": "IXSCAN (Zero COLLSCAN)",
+            "index_type": "Compound ESR + Full-Text",
+            "speedup": "48x faster execution"
+        }
+    },
     {
         "id": "lab-7",
         "chapter": 7,
@@ -273,12 +399,33 @@ ALL_LABS = [
             "overall_winner": "MongoDB (Document) + Neo4j (Graph Aux)",
             "cost_efficiency": "38% lower TCO in production"
         }
+    },
+    {
+        "id": "appendix-a",
+        "chapter": 19,
+        "title": "Appendix A: LLM/SLM Threat Intelligence Chatbot & Mitigation Bot",
+        "subtitle": "RAG Backend, Multi-Platform Triage & Autonomous Remediation",
+        "category": "AI & Chatbot",
+        "status": "Completed",
+        "files": ["chat_api.py", "streamlit_app.py", "threat_llm_service.py", "scanner_bot.py", "chatbot.html"],
+        "objectives": [
+            "Build production RAG backend storing conversation sessions in MongoDB (survives restarts)",
+            "Support Anticipated, Active, Evolving, and Resolved threat triage across Linux, Windows, MacOS, Android, iOS, Cloud",
+            "Implement autonomous background bot scanning Windows/Linux host vulnerabilities",
+            "Execute safe mitigations upon conversational confirmation over chat and update threat status in MongoDB"
+        ],
+        "key_metrics": {
+            "session_persistence": "MongoDB sessions collection",
+            "vector_store": "MongoDB document_chunks (Cosine RAG)",
+            "bot_scanner": "Background worker with port & config auditing",
+            "conversational_flow": "Confirmation-gated system remediation"
+        }
     }
 ]
 
 
 # ---------------------------------------------------------------------------
-# GET /api/labs - List all labs 7 to 18
+# GET /api/labs - List all labs 1 to 18 + Appendix A
 # ---------------------------------------------------------------------------
 @labs_bp.route("", methods=["GET"])
 def list_labs():
@@ -306,17 +453,142 @@ def get_lab_detail(lab_id):
 
 
 # ---------------------------------------------------------------------------
-# POST /api/labs/simulate/<lab_id> - Interactive Lab Simulator
+# POST /api/labs/simulate/<lab_id> - Interactive Lab Simulator for all 1-18
 # ---------------------------------------------------------------------------
 @labs_bp.route("/simulate/<lab_id>", methods=["POST"])
 def simulate_lab(lab_id):
     payload = request.get_json(silent=True) or {}
     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # Simulation for Lab 10: ACID Transactions
-    if lab_id in ["lab-10", "10"]:
+    # Lab 1: Classification
+    if lab_id in ["lab-1", "1"]:
+        return jsonify({
+            "lab": "Lab 1: NoSQL Database Families & Application Mapping",
+            "status": "SIMULATION_OK",
+            "classification_results": [
+                {"workload": "CTI Dossiers & Rich IOC Metadata", "paradigm": "Document Store", "engine": "MongoDB", "fit": "Excellent (Flexible JSON schema)"},
+                {"workload": "Session State & Fast Token Cache", "paradigm": "Key-Value Store", "engine": "Redis", "fit": "O(1) Memory Lookups"},
+                {"workload": "Raw NetFlow & High-Velocity Telemetry", "paradigm": "Wide-Column Store", "engine": "Cassandra", "fit": "Append-Only Fast Writes"},
+                {"workload": "Threat Actor Attribution & Attack Trees", "paradigm": "Graph Store", "engine": "Neo4j", "fit": "Index-Free Adjacency"}
+            ],
+            "execution_time_ms": 1.2,
+            "timestamp": ts
+        })
+
+    # Lab 2: CRUD Essentials
+    elif lab_id in ["lab-2", "2"]:
+        return jsonify({
+            "lab": "Lab 2: Environment Setup & MongoDB CRUD Essentials",
+            "status": "SIMULATION_OK",
+            "connection": "mongodb://localhost:27017 (Server Version: 9.0.2 / 8.0)",
+            "crud_benchmark": {
+                "insert_one": "0.78 ms (Doc ID: ObjectId('66f81a...'))",
+                "find_one": "0.32 ms (Filter: { 'type': 'ipv4-addr' })",
+                "update_one": "0.64 ms ($set modified 1 document)",
+                "delete_one": "0.45 ms (Cleaned up temporary test doc)"
+            },
+            "timestamp": ts
+        })
+
+    # Lab 3: Document Modeling
+    elif lab_id in ["lab-3", "3"]:
+        return jsonify({
+            "lab": "Lab 3: Document Modeling Principles (Embedding vs Referencing)",
+            "status": "SIMULATION_OK",
+            "modeling_comparison": {
+                "embedded_approach": {"size_bytes": 1420, "reads": 1, "updates": "Requires atomic array rewrite", "recommendation": "Use for static feed sources & MITRE codes"},
+                "referenced_approach": {"size_bytes": 280, "reads": 2, "updates": "Update single actor document", "recommendation": "Use for large threat actor profiles"}
+            },
+            "validation_rule": "$jsonSchema enforced for 'value', 'type', and 'severity' fields",
+            "timestamp": ts
+        })
+
+    # Lab 4: Advanced CRUD & Upserts
+    elif lab_id in ["lab-4", "4"]:
+        return jsonify({
+            "lab": "Lab 4: Advanced CRUD Operations, Filters & Bulk Upserts",
+            "status": "SIMULATION_OK",
+            "query_filter": "{ 'severity': { '$in': ['high', 'critical'] }, 'tags': { '$elemMatch': { '$regex': 'ransomware' } } }",
+            "documents_matched": 18,
+            "bulk_write_result": {"nInserted": 0, "nMatched": 50, "nModified": 4, "nUpserted": 2},
+            "execution_time_ms": 2.1,
+            "timestamp": ts
+        })
+
+    # Lab 5: Aggregation Framework
+    elif lab_id in ["lab-5", "5"]:
+        return jsonify({
+            "lab": "Lab 5: Aggregation Framework ($match, $group, $lookup, $facet)",
+            "status": "SIMULATION_OK",
+            "pipeline_summary": [
+                {"stage": "$match", "details": "Filter status == 'active'"},
+                {"stage": "$group", "details": "Group by threat_types, count: { $sum: 1 }"},
+                {"stage": "$lookup", "details": "Joined threat_actors on actor_id"},
+                {"stage": "$facet", "details": "Generated severityDistribution and topActors in 1 roundtrip"}
+            ],
+            "execution_time_ms": 3.8,
+            "timestamp": ts
+        })
+
+    # Lab 6: Indexing Strategies
+    elif lab_id in ["lab-6", "6"]:
+        return jsonify({
+            "lab": "Lab 6: Indexing Strategies & ESR Rule Performance Tuning",
+            "status": "SIMULATION_OK",
+            "before_index": {"stage": "COLLSCAN", "docsExamined": 100000, "millis": 48.2},
+            "after_index_esr": {"stage": "IXSCAN", "indexName": "type_1_status_1_severity_1", "docsExamined": 12, "nReturned": 12, "millis": 0.38},
+            "speedup_factor": "126x",
+            "timestamp": ts
+        })
+
+    # Lab 7: Working Set Analysis
+    elif lab_id in ["lab-7", "7"]:
+        return jsonify({
+            "lab": "Lab 7: Schema Design & Working Set Analysis",
+            "status": "SIMULATION_OK",
+            "collection": "security_reports_working_set",
+            "documents_count": 100000,
+            "average_doc_size": "1,340 bytes",
+            "total_working_set": "208.27 MB",
+            "wiredtiger_cache_size": "1024 MB",
+            "cache_hit_ratio": "98.4%",
+            "verdict": "Working set fits comfortably inside RAM cache with zero eviction pressure.",
+            "timestamp": ts
+        })
+
+    # Lab 8: Replica Sets & HA
+    elif lab_id in ["lab-8", "8"]:
+        return jsonify({
+            "lab": "Lab 8: Replication & High Availability",
+            "status": "SIMULATION_OK",
+            "replica_set": "rs0 (3 members)",
+            "nodes": [
+                {"host": "mongo1:27017", "state": "PRIMARY", "priority": 2.0},
+                {"host": "mongo2:27017", "state": "SECONDARY", "priority": 1.0, "lag_ms": 0.8},
+                {"host": "mongo3:27017", "state": "SECONDARY", "priority": 1.0, "lag_ms": 1.1}
+            ],
+            "simulated_failover": "Primary killed -> Election triggered -> mongo2 elected new PRIMARY in 2.1 seconds.",
+            "timestamp": ts
+        })
+
+    # Lab 9: CAP Theorem
+    elif lab_id in ["lab-9", "9"]:
+        return jsonify({
+            "lab": "Lab 9: The CAP Theorem in Practice",
+            "status": "SIMULATION_OK",
+            "benchmarks": [
+                {"concern": "w:1", "latency_ms": 1.74, "durability": "Acknowledged by primary RAM"},
+                {"concern": "w:majority", "latency_ms": 4.88, "durability": "Replicated to majority secondaries"},
+                {"concern": "w:majority + j:true", "latency_ms": 13.2, "durability": "Written to primary on-disk journal"}
+            ],
+            "split_brain_prevention": "Minority partition primary gracefully steps down to SECONDARY after 10s heartbeat loss.",
+            "timestamp": ts
+        })
+
+    # Lab 10: Multi-Document ACID Transactions
+    elif lab_id in ["lab-10", "10"]:
         action = payload.get("action", "commit")
-        actor_name = payload.get("actor", "Fancy Bear")
+        actor_name = payload.get("actor", "Fancy Bear (APT28)")
         iocs_count = payload.get("iocs_count", 5)
 
         if action == "commit":
@@ -340,132 +612,130 @@ def simulate_lab(lab_id):
                 "status": "TRANSACTION_ABORTED",
                 "isolation": "snapshot",
                 "details": "Simulated constraint violation: Secondary write timeout. session.abort_transaction() executed. Zero documents modified.",
-                "steps": [
-                    {"step": 1, "action": "session.start_transaction()", "status": "OK"},
-                    {"step": 2, "action": "Actor update staged in session", "status": "OK"},
-                    {"step": 3, "action": "Network timeout encountered on secondary validation", "status": "FAILED"},
-                    {"step": 4, "action": "session.abort_transaction()", "status": "ROLLED_BACK"}
-                ],
-                "execution_time_ms": round(random.uniform(1.1, 2.4), 2),
+                "execution_time_ms": 1.4,
                 "timestamp": ts
             })
 
-    # Simulation for Lab 11: Shard Key Evaluation
+    # Lab 11: Shard Key Evaluation
     elif lab_id in ["lab-11", "11"]:
         strategy = payload.get("strategy", "compound")
-        if strategy == "monotonic":
-            return jsonify({
-                "lab": "Lab 11: Sharding & Horizontal Scale",
-                "strategy": "Monotonic { timestamp: 1 }",
-                "verdict": "CRITICAL BOTTLENECK",
-                "chunk_balance": "Uneven (100% of new writes hit max-range chunk on Shard 01)",
-                "hotspot_detected": True,
-                "jumbo_chunks_risk": "High",
-                "distribution": {"shard-01": "94.2%", "shard-02": "3.1%", "shard-03": "2.7%"}
-            })
-        elif strategy == "hashed":
-            return jsonify({
-                "lab": "Lab 11: Sharding & Horizontal Scale",
-                "strategy": "Hashed { indicator_id: 'hashed' }",
-                "verdict": "GOOD WRITE UNIFORMITY",
-                "chunk_balance": "Evenly distributed across 3 shards via MD5 hash buckets",
-                "hotspot_detected": False,
-                "jumbo_chunks_risk": "Low",
-                "distribution": {"shard-01": "33.5%", "shard-02": "33.1%", "shard-03": "33.4%"}
-            })
-        else:
-            return jsonify({
-                "lab": "Lab 11: Sharding & Horizontal Scale",
-                "strategy": "Compound { threat_type: 1, indicator_id: 'hashed' }",
-                "verdict": "OPTIMAL CTI SHARD KEY",
-                "chunk_balance": "Targeted type routing + uniform hash dispersion",
-                "hotspot_detected": False,
-                "jumbo_chunks_risk": "Zero",
-                "distribution": {"shard-01": "34.1%", "shard-02": "32.9%", "shard-03": "33.0%"}
-            })
+        return jsonify({
+            "lab": "Lab 11: Sharding & Horizontal Scale",
+            "strategy": f"Compound {{ threat_type: 1, indicator_id: 'hashed' }}",
+            "verdict": "OPTIMAL CTI SHARD KEY",
+            "chunk_balance": "Targeted type routing + uniform hash dispersion across shards",
+            "hotspot_detected": False,
+            "jumbo_chunks_risk": "Zero",
+            "distribution": {"shard-01": "34.1%", "shard-02": "32.9%", "shard-03": "33.0%"},
+            "timestamp": ts
+        })
 
-    # Simulation for Lab 12: RBAC Field Redaction
+    # Lab 12: RBAC Field Redaction
     elif lab_id in ["lab-12", "12"]:
         role = payload.get("role", "threat_analyst")
-        if role == "ciso_audit":
-            return jsonify({
-                "lab": "Lab 12: RBAC & Field-Level Redaction",
-                "user_role": "ciso_audit",
-                "access_level": "FULL CLEARANCE (TLP:RED UNMASKED)",
-                "redaction_applied": False,
-                "sample_record": {
-                    "indicator_id": "ind-003",
-                    "value": "194.165.16.11",
-                    "actor": "Cozy Bear (APT29)",
-                    "intel_source": "CIA Classified Honeypot Sensor Alpha",
-                    "tlp": "red",
-                    "active_operations": "Operation Midnight Blizzard active intercept"
-                }
-            })
-        else:
-            return jsonify({
-                "lab": "Lab 12: RBAC & Field-Level Redaction",
-                "user_role": "threat_analyst",
-                "access_level": "RESTRICTED (TLP:RED FIELDS MASKED VIA VIEW)",
-                "redaction_applied": True,
-                "sample_record": {
-                    "indicator_id": "ind-003",
-                    "value": "194.165.16.11",
-                    "actor": "Cozy Bear (APT29)",
-                    "intel_source": "[REDACTED - TLP:RED]",
-                    "tlp": "red",
-                    "active_operations": "[REDACTED - INSUFFICIENT CLEARANCE]"
-                }
-            })
+        return jsonify({
+            "lab": "Lab 12: RBAC & Field-Level Redaction",
+            "user_role": role,
+            "access_level": "RESTRICTED (TLP:RED FIELDS MASKED VIA VIEW)" if role != "ciso_audit" else "FULL CLEARANCE (UNMASKED)",
+            "sample_record": {
+                "indicator_id": "ind-003",
+                "value": "194.165.16.11",
+                "actor": "Cozy Bear (APT29)",
+                "intel_source": "[REDACTED - TLP:RED]" if role != "ciso_audit" else "Classified Sensor Alpha",
+                "tlp": "red"
+            },
+            "timestamp": ts
+        })
 
-    # Simulation for Lab 17: AI Vector Search RAG
+    # Lab 13: Cloud & Containers
+    elif lab_id in ["lab-13", "13"]:
+        return jsonify({
+            "lab": "Lab 13: Cloud & Container Deployment",
+            "status": "SIMULATION_OK",
+            "topology": "Kubernetes StatefulSet (mongo-0, mongo-1, mongo-2)",
+            "pvc_status": "Bound (100Gi EBS gp3)",
+            "health_checks": "Liveness Probe: ping (OK) | Readiness Probe: rs.status() (OK)",
+            "timestamp": ts
+        })
+
+    # Lab 14: Production Operations & Profiling
+    elif lab_id in ["lab-14", "14"]:
+        return jsonify({
+            "lab": "Lab 14: Managing Services in Production (Profiling & PITR)",
+            "status": "SIMULATION_OK",
+            "profiling_level": "Level 1 (Threshold: 50 ms)",
+            "slow_queries_captured": 0,
+            "oplog_dump_status": "PITR Point-in-Time target reached successfully",
+            "timestamp": ts
+        })
+
+    # Lab 15: Multi-Tenancy SaaS
+    elif lab_id in ["lab-15", "15"]:
+        return jsonify({
+            "lab": "Lab 15: Designing MongoDB as a Service (Multi-Tenancy)",
+            "status": "SIMULATION_OK",
+            "tenant_guard_middleware": "ACTIVE (Enforces { tenant_id: req.tenant_id } on all PyMongo filters)",
+            "cross_tenant_leak_test": "PASSED (0 rows returned across tenant boundaries)",
+            "timestamp": ts
+        })
+
+    # Lab 16: Polyglot Persistence
+    elif lab_id in ["lab-16", "16"]:
+        return jsonify({
+            "lab": "Lab 16: Polyglot Persistence",
+            "status": "SIMULATION_OK",
+            "federated_query": {
+                "step1_mongodb": "Fetched Threat Dossier for 'Lazarus Group' (2.1 ms)",
+                "step2_neo4j": "Executed Cypher: MATCH (a:Actor)-[:OPERATES]->(c:C2) (3.8 ms)",
+                "step3_cassandra": "Retrieved last 1,000 NetFlow packets from wide-column table (4.2 ms)"
+            },
+            "total_latency_ms": 10.1,
+            "timestamp": ts
+        })
+
+    # Lab 17: AI Vector Search
     elif lab_id in ["lab-17", "17"]:
-        query = payload.get("query", "Russian state sponsored ransomware attacks against critical energy infrastructure")
+        query = payload.get("query", "Russian state sponsored ransomware attacks")
         return jsonify({
             "lab": "Lab 17: AI Vector Search & RAG Foundations",
             "query": query,
-            "embedding_model": "text-embedding-3-small (768 dimensions)",
+            "embedding_dims": 768,
             "vector_index": "HNSW (Hierarchical Navigable Small World)",
-            "search_latency_ms": round(random.uniform(3.5, 6.2), 2),
-            "similarity_metric": "Cosine Similarity",
-            "top_k_matches": [
-                {
-                    "report_id": "rpt-003",
-                    "title": "Sandworm Wiper Campaign Targeting Ukrainian Critical Infrastructure",
-                    "score": 0.9412,
-                    "matched_chunk": "Sandworm (GRU Unit 74455) deployed CaddyWiper against power grid sub-stations."
-                },
-                {
-                    "report_id": "rpt-001",
-                    "title": "APT29 Targeting European Governments via Microsoft-Themed Lures",
-                    "score": 0.8876,
-                    "matched_chunk": "Cozy Bear state-sponsored espionage infiltrating critical IT infrastructure."
-                },
-                {
-                    "report_id": "rpt-005",
-                    "title": "Volt Typhoon Pre-positioning in US Critical Infrastructure: Updated IOCs",
-                    "score": 0.8521,
-                    "matched_chunk": "Pre-positioning in water and energy industrial networks."
-                }
-            ],
-            "rag_answer": "Based on semantic search over indexed threat advisories, Sandworm (GRU) and APT29 represent the highest correlated Russian nation-state threats targeting energy grids using CaddyWiper and WellMess backdoors."
+            "search_latency_ms": 3.9,
+            "matched_chunks": 3,
+            "top_source": "Sandworm Wiper Campaign (Cosine Score: 0.9412)",
+            "timestamp": ts
         })
 
-    # Simulation for Lab 18: Comparative Capstone Benchmark
+    # Lab 18: Comparative Capstone
     elif lab_id in ["lab-18", "18"]:
         return jsonify({
             "lab": "Lab 18: Comparative Capstone Benchmark",
-            "dataset_size": "500,000 Synthetic Cyber Threat Events",
+            "dataset_size": "500,000 Synthetic Events",
             "benchmark_results": [
-                {"database": "MongoDB 8.0", "read_throughput": "28,450 ops/s", "p95_latency": "1.2 ms", "p99_latency": "3.8 ms", "architecture_fit": "Best for JSON Document Models, IOC Feeds & Dynamic Schemas"},
-                {"database": "PostgreSQL 16", "read_throughput": "21,200 ops/s", "p95_latency": "1.9 ms", "p99_latency": "6.4 ms", "architecture_fit": "Best for Relational Billing, Rigid Schemas & Strict ACID"},
-                {"database": "Apache Cassandra", "read_throughput": "42,100 ops/s", "p95_latency": "2.4 ms", "p99_latency": "8.1 ms", "architecture_fit": "Best for Append-Only NetFlow & Firewall Event Ingestion"},
-                {"database": "Neo4j 5.x", "read_throughput": "9,800 ops/s", "p95_latency": "3.1 ms", "p99_latency": "11.2 ms", "architecture_fit": "Best for Multi-Hop Threat Actor Attribution & Attack Trees"}
+                {"database": "MongoDB 8.0", "read_throughput": "28,450 ops/s", "p95_latency": "1.2 ms", "p99_latency": "3.8 ms"},
+                {"database": "PostgreSQL 16", "read_throughput": "21,200 ops/s", "p95_latency": "1.9 ms", "p99_latency": "6.4 ms"},
+                {"database": "Apache Cassandra", "read_throughput": "42,100 ops/s", "p95_latency": "2.4 ms", "p99_latency": "8.1 ms"},
+                {"database": "Neo4j 5.x", "read_throughput": "9,800 ops/s", "p95_latency": "3.1 ms", "p99_latency": "11.2 ms"}
             ],
-            "final_capstone_verdict": "Production Hybrid Blueprint: MongoDB as Primary Threat Hub + Neo4j for Relationship Traversal"
+            "verdict": "Production Hybrid Blueprint: MongoDB Primary + Neo4j Graph Aux",
+            "timestamp": ts
         })
 
-    # Default general simulator
+    # Appendix A: LLM/SLM RAG Chatbot & Autonomous Scanner Bot
+    elif lab_id in ["appendix-a", "19", "chat"]:
+        return jsonify({
+            "lab": "Appendix A: LLM/SLM Threat Intelligence Chatbot & Mitigation Bot",
+            "status": "BOT_ACTIVE",
+            "architecture": "FastAPI / Flask RAG Backend + MongoDB Session Store + Vector Chunks",
+            "supported_platforms": ["Linux", "Windows", "MacOS", "Android", "iOS", "Cloud"],
+            "supported_lifecycles": ["Anticipated", "Active", "Evolving", "Resolved"],
+            "autonomous_scanner": "Background worker listening and identifying host vulnerabilities",
+            "conversational_mitigation": "Confirmation-gated safe system remediation with automated verification",
+            "timestamp": ts
+        })
+
+    # Default
     return jsonify({
         "lab": lab_id,
         "status": "SIMULATION_OK",

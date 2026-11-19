@@ -1,9 +1,75 @@
 /**
- * CTI Platform — Shared Sidebar Component (Labs 7 to 18)
+ * CTI Platform — Shared Sidebar Component (Labs 1 to 18 + Appendix A)
  * Dynamically injects and manages the interactive sidebar across all platform pages.
  */
 
 export const LAB_CURRICULUM = [
+  {
+    id: "lab-1",
+    chapter: 1,
+    title: "Lab 1: NoSQL Families & CTI",
+    subtitle: "Document, Key-Value, Column & Graph",
+    href: "labs.html?filter=Foundations",
+    icon: "fa-project-diagram",
+    badge: "Done",
+    badgeClass: "sidebar-badge-done",
+    desc: "Classify databases and map Cyber Threat Intelligence workloads to NoSQL paradigms."
+  },
+  {
+    id: "lab-2",
+    chapter: 2,
+    title: "Lab 2: PyMongo CRUD Essentials",
+    subtitle: "Connection Pools & BSON Types",
+    href: "labs.html?filter=CRUD",
+    icon: "fa-plug",
+    badge: "Done",
+    badgeClass: "sidebar-badge-done",
+    desc: "PyMongo client pooling, BSON serialization, and atomic single-document operations."
+  },
+  {
+    id: "lab-3",
+    chapter: 3,
+    title: "Lab 3: Document Modeling",
+    subtitle: "Embedding vs Referencing",
+    href: "labs.html?filter=Modeling",
+    icon: "fa-sitemap",
+    badge: "Done",
+    badgeClass: "sidebar-badge-done",
+    desc: "1:few embedding for feed sources vs N:M referencing for threat actors."
+  },
+  {
+    id: "lab-4",
+    chapter: 4,
+    title: "Lab 4: Advanced CRUD & Upserts",
+    subtitle: "Filters, Array Ops & Bulk Writes",
+    href: "labs.html?filter=CRUD",
+    icon: "fa-filter",
+    badge: "Done",
+    badgeClass: "sidebar-badge-done",
+    desc: "Complex $in / $regex queries, $push array modifiers, and bulk threat upserts."
+  },
+  {
+    id: "lab-5",
+    chapter: 5,
+    title: "Lab 5: Aggregation Analytics",
+    subtitle: "Pipelines, $lookup & $facet",
+    href: "labs.html?filter=Analytics",
+    icon: "fa-chart-pie",
+    badge: "Done",
+    badgeClass: "sidebar-badge-done",
+    desc: "Multi-stage aggregations joining actors and indicators with parallel facets."
+  },
+  {
+    id: "lab-6",
+    chapter: 6,
+    title: "Lab 6: Indexing & ESR Rule",
+    subtitle: "Performance & Explain Plans",
+    href: "labs.html?filter=Performance",
+    icon: "fa-bolt",
+    badge: "Done",
+    badgeClass: "sidebar-badge-done",
+    desc: "ESR compound indexes and text indexes eliminating full collection scans."
+  },
   {
     id: "lab-7",
     chapter: 7,
@@ -44,7 +110,7 @@ export const LAB_CURRICULUM = [
     subtitle: "Multi-Doc Transactions",
     href: "lab10_reports.html",
     icon: "fa-exchange-alt",
-    badge: "New",
+    badge: "Active",
     badgeClass: "sidebar-badge-new",
     desc: "ACID sessions, snapshot isolation, bank transfers & multi-collection threat quarantines."
   },
@@ -55,7 +121,7 @@ export const LAB_CURRICULUM = [
     subtitle: "Horizontal Scalability",
     href: "lab11_reports.html",
     icon: "fa-layer-group",
-    badge: "New",
+    badge: "Active",
     badgeClass: "sidebar-badge-new",
     desc: "Shard key evaluation, ranged vs hashed distribution, and monotonic key hotspot avoidance."
   },
@@ -66,7 +132,7 @@ export const LAB_CURRICULUM = [
     subtitle: "RBAC, TLS & Encryption",
     href: "lab12_reports.html",
     icon: "fa-shield-alt",
-    badge: "New",
+    badge: "Active",
     badgeClass: "sidebar-badge-new",
     desc: "Role-Based Access Control, field-level redaction views for TLP:RED intelligence, and TLS."
   },
@@ -77,7 +143,7 @@ export const LAB_CURRICULUM = [
     subtitle: "Docker, K8s & Terraform",
     href: "lab13_reports.html",
     icon: "fa-cubes",
-    badge: "New",
+    badge: "Active",
     badgeClass: "sidebar-badge-new",
     desc: "Production Docker deployment, Kubernetes StatefulSet topologies, and automated cloud orchestration."
   },
@@ -88,7 +154,7 @@ export const LAB_CURRICULUM = [
     subtitle: "Diagnostics & Backups",
     href: "lab14_reports.html",
     icon: "fa-tachometer-alt",
-    badge: "New",
+    badge: "Active",
     badgeClass: "sidebar-badge-new",
     desc: "Diagnostic metrics (mongostat/mongotop), oplog window monitoring, and point-in-time recovery."
   },
@@ -99,7 +165,7 @@ export const LAB_CURRICULUM = [
     subtitle: "Product as a Service",
     href: "lab15_reports.html",
     icon: "fa-building",
-    badge: "New",
+    badge: "Active",
     badgeClass: "sidebar-badge-new",
     desc: "Multi-tenant CTI isolation patterns, tenant boundary guards, and cross-tenant data migration."
   },
@@ -135,6 +201,17 @@ export const LAB_CURRICULUM = [
     badge: "Final",
     badgeClass: "sidebar-badge-done",
     desc: "End-to-end benchmark across MongoDB, Relational & Graph engines; comprehensive capstone review."
+  },
+  {
+    id: "appendix-a",
+    chapter: 19,
+    title: "Appendix A: AI Threat Bot",
+    subtitle: "RAG & Autonomous Mitigation",
+    href: "chatbot.html",
+    icon: "fa-robot",
+    badge: "New",
+    badgeClass: "sidebar-badge-new",
+    desc: "Multi-platform threat triage, MongoDB vector RAG, and autonomous vulnerability scanner bot."
   }
 ];
 
@@ -178,20 +255,26 @@ export function initSidebar(activePage = "") {
             <i class="fas fa-chart-bar"></i> Performance Analytics
           </a>
         </li>
+        <li>
+          <a href="chatbot.html" class="sidebar-link ${currentPath === 'chatbot.html' || activePage === 'chatbot' ? 'active' : ''}" style="color:var(--accent-cyan);">
+            <i class="fas fa-robot" style="color:var(--accent-cyan);"></i> AI Threat Analyst &amp; Bot
+            <span class="sidebar-badge" style="background:#8b5cf6;color:#fff;">AI RAG</span>
+          </a>
+        </li>
       </ul>
     </div>
 
     <!-- Curriculum Explorer -->
     <div class="sidebar-section" style="flex:1;">
       <div class="sidebar-title">
-        <span>Curriculum (Labs 7 - 18)</span>
+        <span>Curriculum (Labs 1 - 18)</span>
         <a href="labs.html" style="font-size:0.65rem;color:var(--accent-cyan);text-transform:none;">View All &rarr;</a>
       </div>
       <ul class="sidebar-nav">
         <li>
           <a href="labs.html" class="sidebar-link ${currentPath === 'labs.html' || activePage === 'labs-hub' ? 'active' : ''}" style="color:var(--accent-cyan);font-weight:600;">
             <i class="fas fa-book-open" style="color:var(--accent-cyan);"></i> All Labs Portal Hub
-            <span class="sidebar-badge sidebar-badge-new">12 Labs</span>
+            <span class="sidebar-badge sidebar-badge-new">19 Modules</span>
           </a>
         </li>
         ${LAB_CURRICULUM.map(lab => `

@@ -17,3 +17,12 @@ Thumbs.db
 
 # Logs
 *.log
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+.venv/
+node_modules/

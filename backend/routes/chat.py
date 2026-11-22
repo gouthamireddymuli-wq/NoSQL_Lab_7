@@ -23,7 +23,8 @@ from services.threat_llm_service import (
     execute_chat,
     ingest_threat_documents,
     retrieve_context,
-    get_db
+    get_db,
+    check_ollama
 )
 from services.scanner_bot import bot_instance
 
@@ -56,6 +57,9 @@ def chat_endpoint():
     platform = payload.get("platform")
     threat_status = payload.get("threat_status")
     top_k = int(payload.get("top_k", 3))
+    backend = payload.get("backend")
+    model = payload.get("model")
+    ollama_url = payload.get("ollama_url")
 
     if not message:
         return jsonify({"error": "Message content cannot be empty"}), 400
@@ -161,9 +165,22 @@ def chat_endpoint():
         message=message,
         platform=platform,
         threat_status=threat_status,
-        top_k=top_k
+        top_k=top_k,
+        backend=backend,
+        model=model,
+        ollama_url=ollama_url
     )
     return jsonify(res)
+
+
+# ---------------------------------------------------------------------------
+# GET /api/chat/ollama/status - Check Ollama Server & Installed Models
+# ---------------------------------------------------------------------------
+@chat_bp.route("/ollama/status", methods=["GET"])
+def ollama_status():
+    custom_url = request.args.get("url")
+    status = check_ollama(custom_url)
+    return jsonify(status)
 
 
 # ---------------------------------------------------------------------------

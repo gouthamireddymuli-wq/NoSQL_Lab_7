@@ -1,10 +1,13 @@
 """
-Threat Intelligence LLM/SLM RAG Service
+Threat Intelligence LLM/SLM RAG Service with Full Ollama Integration
+=============================================================================
 Extends Appendix A architecture for Cyber Threat Intelligence:
-- Persistent conversation memory in MongoDB (`sessions` collection)
-- Semantic vector chunking and top-k retrieval (`document_chunks` collection)
-- Support for Ollama, OpenAI, and Built-in CTI Expert SLM Engine
-- Precise mitigation procedures and platform-targeted threat triage
+- Seamless Ollama local SLM/LLM integration with auto-model discovery
+- Support for custom Ollama remote endpoints / tunnels for cloud deployments (Vercel)
+- Semantic vector chunking and top-k retrieval (document_chunks collection)
+- Persistent conversation memory in MongoDB (sessions collection)
+- Graceful intelligent fallback to Built-in CTI Expert Reasoning Engine
+=============================================================================
 """
 
 import os
@@ -15,16 +18,16 @@ import hashlib
 import re
 import datetime
 import requests
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 
 from pymongo import MongoClient
 
-# Configuration
+# --- Configuration ---
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 MONGO_DB = os.getenv("MONGO_DB", "cti_platform")
-LLM_BACKEND = os.getenv("LLM_BACKEND", "builtin")  # "ollama", "openai", "builtin"
+LLM_BACKEND = os.getenv("LLM_BACKEND", "ollama")  # "ollama", "builtin", "openai", "auto"
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "150"))
@@ -41,15 +44,43 @@ def get_db():
     return _client[MONGO_DB]
 
 
+# --- Dynamic Ollama Status & Model Discovery ---
+def check_ollama(url: Optional[str] = None) -> Dict[str, Any]:
+    """Checks Ollama server connectivity and lists installed models."""
+    base_url = (url or os.getenv("OLLAMA_BASE_URL", OLLAMA_BASE_URL)).rstrip("/")
+    try:
+        resp = requests.get(f"{base_url}/api/tags", timeout=3)
+        if resp.status_code == 200:
+            data = resp.json()
+            raw_models = data.get("models", [])
+            model_names = [m.get("name") for m in raw_models if m.get("name")]
+            active = model_names[0] if model_names else OLLAMA_MODEL
+            return {
+                "status": "connected",
+                "base_url": base_url,
+                "models": model_names,
+                "active_model": active,
+                "count": len(model_names),
+                "is_local": "localhost" in base_url or "127.0.0.1" in base_url
+            }
+    except Exception as e:
+        return {
+            "status": "offline",
+            "base_url": base_url,
+            "models": [],
+            "error": str(e),
+            "is_local": "localhost" in base_url or "127.0.0.1" in base_url
+        }
+    return {"status": "offline", "base_url": base_url, "models": []}
+
+
 # --- Vector Embeddings (Appendix A Spec) ---
 def mock_embed(text: str, dim: int = 384) -> List[float]:
-    """Generates deterministic unit-normalized pseudo-embedding for local vector search."""
     tokens = text.lower().split()
     seed_val = int(hashlib.md5(text.encode("utf-8")).hexdigest()[:8], 16)
     rng = random.Random(seed_val)
     vec = [rng.gauss(0, 1) for _ in range(dim)]
     
-    # Give semantic boost to key cybersecurity tokens
     cyber_keywords = {
         "linux": 0, "windows": 10, "macos": 20, "android": 30, "ios": 40, "cloud": 50,
         "anticipated": 60, "active": 70, "evolving": 80, "resolved": 90,
@@ -81,7 +112,6 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE) -> List[str]:
 
 # --- Document Ingestion & RAG Indexing ---
 def ingest_threat_documents(documents: List[Dict[str, Any]], chunk_size: int = CHUNK_SIZE) -> int:
-    """Chunks, embeds, and stores threat intelligence documents into MongoDB document_chunks."""
     db = get_db()
     col = db["document_chunks"]
     chunks_to_insert = []
@@ -93,7 +123,6 @@ def ingest_threat_documents(documents: List[Dict[str, Any]], chunk_size: int = C
         severity = doc.get("severity", "Medium")
         cve_id = doc.get("cve_id", "N/A")
         
-        # Build comprehensive content text
         content = (
             f"Threat Title: {title}\n"
             f"Platform: {platform} | Status: {status} | Severity: {severity} | CVE: {cve_id}\n"
@@ -123,18 +152,16 @@ def ingest_threat_documents(documents: List[Dict[str, Any]], chunk_size: int = C
             })
 
     if chunks_to_insert:
-        col.delete_many({})  # Refresh vector index
+        col.delete_many({})
         col.insert_many(chunks_to_insert)
 
     return len(chunks_to_insert)
 
 
 def retrieve_context(query: str, platform: Optional[str] = None, threat_status: Optional[str] = None, top_k: int = TOP_K) -> List[Dict[str, Any]]:
-    """Retrieves top-k nearest neighbor threat intelligence chunks from MongoDB."""
     db = get_db()
     col = db["document_chunks"]
 
-    # Filter query
     mongo_filter = {}
     if platform and platform.lower() not in ["all", "any"]:
         mongo_filter["platform"] = {"$regex": f"^{platform}$", "$options": "i"}
@@ -164,58 +191,96 @@ def retrieve_context(query: str, platform: Optional[str] = None, threat_status: 
     ]
 
 
-# --- LLM Backends ---
-def call_ollama(prompt: str, history: List[Dict[str, str]]) -> str:
-    messages = [
-        {"role": "system", "content": "You are a Senior Cyber Threat Intelligence Analyst and Incident Response Officer. Provide concise, expert threat explanations with exact step-by-step mitigation procedures and terminal commands."}
-    ]
-    messages.extend(history)
+# --- Ollama Caller with Dynamic Model & URL Support ---
+def call_ollama(
+    prompt: str,
+    history: List[Dict[str, str]],
+    model: Optional[str] = None,
+    base_url: Optional[str] = None
+) -> Tuple[str, str]:
+    """
+    Queries local or remote Ollama SLM/LLM instance.
+    Returns (response_text, engine_label).
+    """
+    target_url = (base_url or OLLAMA_BASE_URL).rstrip("/")
+    target_model = model or OLLAMA_MODEL
+
+    # Dynamic check: auto-pick available model if requested model isn't installed
+    st = check_ollama(target_url)
+    if st.get("status") == "connected" and st.get("models"):
+        if target_model not in st["models"]:
+            target_model = st["models"][0]
+
+    system_instruction = (
+        "You are an authoritative Cyber Threat Intelligence (CTI) Defensive Security Officer and Systems Hardening Specialist.\n"
+        "Your role is exclusively DEFENSIVE: explaining threats, guiding administrators in patching vulnerabilities, and providing remediation commands.\n"
+        "Analyze the provided CTI knowledge context and user query.\n"
+        "Format your response cleanly in Markdown:\n"
+        "### 🛡️ Threat Analysis & Risk\n"
+        "State the threat name, affected platform, CVE, and severity.\n\n"
+        "### 🔧 Step-by-Step Mitigation Procedures\n"
+        "Detail safe administrative remediation steps with exact command snippets for the target platform.\n\n"
+        "### 🔍 Verification Command\n"
+        "Provide a safe inspection command (e.g. package version check, firewall check) to verify the fix."
+    )
+
+    messages = [{"role": "system", "content": system_instruction}]
+    for h in history:
+        if h.get("role") in ["user", "assistant"] and h.get("content"):
+            messages.append({"role": h["role"], "content": h["content"]})
     messages.append({"role": "user", "content": prompt})
+
     try:
         resp = requests.post(
-            f"{OLLAMA_BASE_URL}/api/chat",
-            json={"model": OLLAMA_MODEL, "messages": messages, "stream": False},
-            timeout=30
+            f"{target_url}/api/chat",
+            json={
+                "model": target_model,
+                "messages": messages,
+                "stream": False,
+                "options": {
+                    "temperature": 0.2,
+                    "top_p": 0.9
+                }
+            },
+            timeout=60
         )
         resp.raise_for_status()
-        return resp.json()["message"]["content"]
+        res_json = resp.json()
+        content = res_json.get("message", {}).get("content", "")
+        return content, f"Ollama ({target_model})"
     except Exception as e:
-        return f"[Ollama Error: {e} - Falling back to CTI Security Intelligence Engine]\n\n" + builtin_cti_engine(prompt, history)
+        raise RuntimeError(f"Ollama connection error ({target_url} / {target_model}): {e}")
 
 
-def call_openai(prompt: str, history: List[Dict[str, str]]) -> str:
+def call_openai(prompt: str, history: List[Dict[str, str]]) -> Tuple[str, str]:
     try:
         from openai import OpenAI
         oa = OpenAI(api_key=OPENAI_API_KEY)
         messages = [
             {"role": "system", "content": "You are a Senior Cyber Threat Intelligence Analyst. Provide exact mitigation procedures, platform-specific commands, and technical risk assessments based on the provided context."}
         ]
-        messages.extend(history)
+        for h in history:
+            if h.get("role") in ["user", "assistant"]:
+                messages.append({"role": h["role"], "content": h["content"]})
         messages.append({"role": "user", "content": prompt})
         resp = oa.chat.completions.create(model=OPENAI_MODEL, messages=messages, max_tokens=700)
-        return resp.choices[0].message.content
+        return resp.choices[0].message.content, f"OpenAI ({OPENAI_MODEL})"
     except Exception as e:
-        return f"[OpenAI Error: {e} - Falling back to CTI Security Intelligence Engine]\n\n" + builtin_cti_engine(prompt, history)
+        raise RuntimeError(f"OpenAI error: {e}")
 
 
 def builtin_cti_engine(query: str, sources: List[Dict[str, Any]], requested_platform: Optional[str] = None, requested_status: Optional[str] = None) -> str:
-    """
-    Intelligent built-in CTI Reasoning & Mitigation Engine.
-    Produces high-fidelity, actionable threat advisories with exact terminal commands.
-    """
-    q_lower = query.lower()
-
+    """Intelligent built-in CTI reasoning engine for instant deterministic threat mitigation."""
     if not sources:
         return (
             f"### 🛡️ CTI Platform Threat Intelligence Advisory\n\n"
-            f"No specific threat vectors found in the vector index for query: **'{query}'** "
+            f"No specific threat vectors found in vector index for query: **'{query}'** "
             f"under platform **{requested_platform or 'All'}** ({requested_status or 'All Statuses'}).\n\n"
             f"**Recommended Action:**\n"
-            f"1. Ingest additional CTI feeds via the **Ingest CTI Documents** button or `POST /api/chat/ingest`.\n"
-            f"2. Run a background platform vulnerability scan to detect live host weaknesses."
+            f"1. Ingest CTI vectors via `POST /api/chat/ingest`.\n"
+            f"2. Run a background platform vulnerability scan (`Scan system`)."
         )
 
-    # Format authoritative advisory
     top_hit = sources[0]
     raw = top_hit.get("raw_threat", {})
     title = raw.get("title", top_hit.get("source", "Threat Advisory"))
@@ -226,10 +291,10 @@ def builtin_cti_engine(query: str, sources: List[Dict[str, Any]], requested_plat
     summary = raw.get("summary", top_hit.get("text", ""))
     mitigations = raw.get("mitigation_procedures", [
         "Isolate affected endpoint from network segment.",
-        "Apply latest vendor patches and security updates.",
+        "Apply latest vendor security updates.",
         "Audit access logs for anomalous behavior."
     ])
-    remediation_script = raw.get("remediation_script", "# Review and apply vendor patch")
+    remediation_script = raw.get("remediation_script", "# Review and apply patch")
     verification_command = raw.get("verification_command", "# Check patch level")
 
     badge_status = {
@@ -250,22 +315,30 @@ def builtin_cti_engine(query: str, sources: List[Dict[str, Any]], requested_plat
         f"#### 4. Automated Verification Check\n```bash\n{verification_command}\n```"
     ]
 
-    # Additional contextual hits
     if len(sources) > 1:
         resp_parts.append("\n#### 5. Correlated Intelligence & Secondary Vectors")
-        for i, s in enumerate(sources[1:], 2):
+        for s in sources[1:]:
             resp_parts.append(f"- **[{s.get('platform')}] {s.get('source')}** (`{s.get('status').upper()}` - Severity: {s.get('severity')}) — Relevance Score: `{s.get('score')}`")
 
     return "\n\n".join(resp_parts)
 
 
 # --- Core Orchestration Pipeline ---
-def execute_chat(session_id: str, message: str, platform: Optional[str] = None, threat_status: Optional[str] = None, top_k: int = TOP_K) -> Dict[str, Any]:
+def execute_chat(
+    session_id: str,
+    message: str,
+    platform: Optional[str] = None,
+    threat_status: Optional[str] = None,
+    top_k: int = TOP_K,
+    backend: Optional[str] = None,
+    model: Optional[str] = None,
+    ollama_url: Optional[str] = None
+) -> Dict[str, Any]:
     """
-    Main RAG Chat handler:
+    Main RAG Chat orchestrator:
     1. Retrieves top_k relevant threat chunks
-    2. Loads session history from MongoDB
-    3. Calls LLM or Built-in CTI Engine
+    2. Formats CTI context block
+    3. Tries Ollama (or OpenAI / Built-in)
     4. Persists conversation turn into MongoDB sessions collection
     """
     start_time = time.perf_counter()
@@ -279,18 +352,46 @@ def execute_chat(session_id: str, message: str, platform: Optional[str] = None, 
     session_doc = sessions_col.find_one({"session_id": session_id})
     history = session_doc.get("history", []) if session_doc else []
 
-    # 3. Generate response
-    if LLM_BACKEND == "openai" and OPENAI_API_KEY:
-        context_block = "\n\n".join(f"[{s['source']} - Platform: {s['platform']} - Status: {s['status']}]\n{s['text']}" for s in sources)
-        prompt = f"Threat Intelligence Knowledge Context:\n{context_block}\n\nUser Question: {message}\nTarget Platform: {platform or 'Any'}\nStatus: {threat_status or 'Any'}"
-        response_text = call_openai(prompt, history[-4:])
-    elif LLM_BACKEND == "ollama":
-        context_block = "\n\n".join(f"[{s['source']} - Platform: {s['platform']} - Status: {s['status']}]\n{s['text']}" for s in sources)
-        prompt = f"Threat Intelligence Knowledge Context:\n{context_block}\n\nUser Question: {message}\nTarget Platform: {platform or 'Any'}\nStatus: {threat_status or 'Any'}"
-        response_text = call_ollama(prompt, history[-4:])
+    # 3. Determine Execution Engine
+    selected_backend = (backend or LLM_BACKEND).lower()
+    response_text = ""
+    engine_used = "Built-in CTI Engine"
+
+    # Context block for LLM prompt
+    context_block = "\n\n".join(
+        f"[{s['source']} - Platform: {s['platform']} - Status: {s['status']} - Severity: {s['severity']}]\n{s['text']}"
+        for s in sources
+    )
+    llm_prompt = (
+        f"CTI Knowledge Context:\n{context_block}\n\n"
+        f"User Inquiry: {message}\n"
+        f"Target Platform Filter: {platform or 'Any'}\n"
+        f"Lifecycle Status Filter: {threat_status or 'Any'}"
+    )
+
+    # Attempt Ollama if requested or if in auto/ollama mode
+    if selected_backend in ["ollama", "auto"]:
+        try:
+            response_text, engine_used = call_ollama(
+                llm_prompt,
+                history[-4:],
+                model=model,
+                base_url=ollama_url
+            )
+        except Exception as e:
+            # Fallback to Built-in CTI Engine with notice
+            fallback_text = builtin_cti_engine(message, sources, requested_platform=platform, requested_status=threat_status)
+            response_text = fallback_text
+            engine_used = f"Built-in CTI Engine (Ollama Offline: {str(e)[:60]}...)"
+    elif selected_backend == "openai" and OPENAI_API_KEY:
+        try:
+            response_text, engine_used = call_openai(llm_prompt, history[-4:])
+        except Exception as e:
+            response_text = builtin_cti_engine(message, sources, requested_platform=platform, requested_status=threat_status)
+            engine_used = f"Built-in CTI Engine (OpenAI fallback: {e})"
     else:
-        # High-precision built-in CTI engine
         response_text = builtin_cti_engine(message, sources, requested_platform=platform, requested_status=threat_status)
+        engine_used = "Built-in CTI Engine"
 
     # 4. Save history in MongoDB (Appendix A specification)
     history.append({
@@ -303,6 +404,7 @@ def execute_chat(session_id: str, message: str, platform: Optional[str] = None, 
     history.append({
         "role": "assistant",
         "content": response_text,
+        "engine": engine_used,
         "sources": [{"source": s["source"], "score": s["score"], "platform": s["platform"], "status": s["status"]} for s in sources],
         "timestamp": datetime.datetime.utcnow().isoformat()
     })
@@ -321,5 +423,6 @@ def execute_chat(session_id: str, message: str, platform: Optional[str] = None, 
         "sources": sources,
         "latency_ms": latency_ms,
         "platform": platform or "All",
-        "threat_status": threat_status or "All"
+        "threat_status": threat_status or "All",
+        "engine_used": engine_used
     }

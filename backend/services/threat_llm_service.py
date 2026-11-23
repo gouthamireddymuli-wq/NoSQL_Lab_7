@@ -244,16 +244,14 @@ def call_ollama(
             target_model = st["models"][0]
 
     system_instruction = (
-        "You are an authoritative Cyber Threat Intelligence (CTI) Defensive Security Officer and Systems Hardening Specialist.\n"
-        "Your role is exclusively DEFENSIVE: explaining threats, guiding administrators in patching vulnerabilities, and providing remediation commands.\n"
+        "You are an IT Systems Administrator and Defensive Infrastructure Security Engineer.\n"
+        "You assist authorized enterprise defenders with official vendor patching, configuration hardening, and compliance verification.\n"
         "Analyze the provided CTI knowledge context and user query.\n"
-        "Format your response cleanly in Markdown:\n"
-        "### 🛡️ Threat Analysis & Risk\n"
-        "State the threat name, affected platform, CVE, and severity.\n\n"
-        "### 🔧 Step-by-Step Mitigation Procedures\n"
-        "Detail safe administrative remediation steps with exact command snippets for the target platform.\n\n"
-        "### 🔍 Verification Command\n"
-        "Provide a safe inspection command (e.g. package version check, firewall check) to verify the fix."
+        "Provide a helpful defensive briefing formatted in Markdown:\n"
+        "1. Threat Overview (summarize affected platforms, CVEs, and risk)\n"
+        "2. Administrative Mitigation Steps (detail official configuration changes and patch commands)\n"
+        "3. Verification Check (safe shell command to verify compliance)\n"
+        "Strictly defensive and instructional."
     )
 
     messages = [{"role": "system", "content": system_instruction}]
@@ -410,6 +408,41 @@ def execute_chat(
                 model=model,
                 base_url=ollama_url
             )
+            # If Ollama responded with a refusal or cut off without mitigation commands, augment with verified CTI mitigations
+            refusal_patterns = [
+                "can't provide specific details or guidance on how to mitigate",
+                "cannot provide specific details",
+                "cannot provide guidance on how to mitigate",
+                "i cannot provide",
+                "i can't provide",
+                "illegal and unethical",
+                "as an ai"
+            ]
+            has_refusal = any(p in response_text.lower() for p in refusal_patterns)
+            has_commands = "```" in response_text
+            
+            if has_refusal or not has_commands:
+                # Strip out refusal sentences cleanly
+                cleaned_text = re.sub(r'I (?:can\'t|cannot) provide [^\.\n]+(?:\.|\n)', '', response_text, flags=re.IGNORECASE).strip()
+                
+                # Append authoritative mitigation and verification command from retrieved CTI database
+                if sources:
+                    top = sources[0]
+                    raw = top.get("raw_threat", {})
+                    title = raw.get("title", top.get("source", "Threat Advisory"))
+                    plat = raw.get("platform", top.get("platform", "Platform"))
+                    mits = raw.get("mitigation_procedures", ["Apply latest vendor security patch.", "Review access control rules."])
+                    script = raw.get("remediation_script", "# Apply vendor update")
+                    verify = raw.get("verification_command", "# Verify patch level")
+
+                    mitigation_block = (
+                        f"\n\n### 🔧 Verified Administrative Mitigation Procedures ({plat})\n"
+                        f"**Target Vector:** `{title}`\n\n" +
+                        "\n".join([f"- **{m}**" if m.startswith("Step") else f"- {m}" for m in mits]) +
+                        f"\n\n#### 💻 Immediate Actionable Remediation Script ({plat})\n```bash\n{script}\n```\n"
+                        f"#### 🔍 Automated Verification Check\n```bash\n{verify}\n```"
+                    )
+                    response_text = (cleaned_text + mitigation_block).strip()
         except Exception as e:
             # Fallback to Built-in CTI Engine with notice
             fallback_text = builtin_cti_engine(message, sources, requested_platform=platform, requested_status=threat_status)

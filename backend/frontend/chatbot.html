@@ -380,6 +380,16 @@
       <button class="modal-close" onclick="closeOllamaModal()"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body">
+      <!-- Cloud Environment Notice -->
+      <div id="modal-cloud-notice" style="display:none;background:rgba(14, 165, 233, 0.12);border:1px solid rgba(14, 165, 233, 0.35);border-radius:6px;padding:0.75rem;margin-bottom:0.75rem;font-size:0.8rem;color:#bae6fd;">
+        <div style="font-weight:700;margin-bottom:0.25rem;"><i class="fas fa-cloud"></i> You are viewing from Vercel Cloud:</div>
+        <span>Vercel runs on cloud servers and cannot reach <code>localhost:11434</code> on your private computer without a tunnel.</span>
+        <div style="margin-top:0.5rem;display:flex;gap:0.4rem;flex-wrap:wrap;">
+          <button class="btn btn-sm btn-outline" type="button" onclick="selectBuiltinAndClose()" style="font-size:0.75rem;padding:0.25rem 0.5rem;"><i class="fas fa-check"></i> Use Built-in Engine on Cloud</button>
+          <a href="http://localhost:5000/chatbot.html" target="_blank" class="btn btn-sm btn-primary" style="font-size:0.75rem;padding:0.25rem 0.5rem;text-decoration:none;"><i class="fas fa-external-link-alt"></i> Open Localhost App (Port 5000)</a>
+        </div>
+      </div>
+
       <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.75rem;">
         Configure your Ollama API endpoint. When testing locally, default is <code>http://localhost:11434</code>.<br/>
         When accessing from <strong>Vercel Cloud</strong>, enter your public Ollama Tunnel URL (e.g. Cloudflare tunnel or ngrok) to let the cloud app route to your laptop's Ollama instance.
@@ -661,7 +671,12 @@
   }
 
   window.openOllamaSettings = function() {
-    document.getElementById("cfg-ollama-url").value = customOllamaUrl || "http://localhost:11434";
+    const isCloud = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+    const cloudNotice = document.getElementById("modal-cloud-notice");
+    if (cloudNotice) {
+      cloudNotice.style.display = isCloud ? "block" : "none";
+    }
+    document.getElementById("cfg-ollama-url").value = customOllamaUrl || (isCloud ? "" : "http://localhost:11434");
     document.getElementById("cfg-ollama-model").value = selectedModel || "llama3.2:1b";
     document.getElementById("ollama-test-feedback").style.display = "none";
     document.getElementById("ollama-modal-overlay").classList.add("open");
@@ -671,13 +686,45 @@
     document.getElementById("ollama-modal-overlay").classList.remove("open");
   };
 
+  window.selectBuiltinAndClose = function() {
+    const sel = document.getElementById("engine-selector");
+    if (sel) sel.value = "builtin";
+    window.handleEngineChange("builtin");
+    window.closeOllamaModal();
+  };
+
   window.testOllamaConnection = async function() {
     const url = document.getElementById("cfg-ollama-url").value.trim();
     const fb = document.getElementById("ollama-test-feedback");
     fb.style.display = "block";
     fb.style.background = "rgba(0, 212, 255, 0.1)";
     fb.style.color = "var(--accent-cyan)";
-    fb.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Pinging ${escHtml(url)}/api/tags...`;
+    fb.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Pinging ${escHtml(url || 'endpoint')}...`;
+
+    const isCloud = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+    const isTargetingLocal = !url || url.includes("localhost") || url.includes("127.0.0.1");
+
+    if (isCloud && isTargetingLocal) {
+      fb.style.background = "rgba(245, 158, 11, 0.15)";
+      fb.style.color = "#fef08a";
+      fb.innerHTML = `
+        <div style="line-height:1.45;text-align:left;">
+          <strong><i class="fas fa-info-circle"></i> Vercel Cloud cannot reach your local PC directly:</strong><br/>
+          Because this page is running on Vercel's public cloud servers (<code>${window.location.hostname}</code>), it cannot reach <code>${escHtml(url || 'http://localhost:11434')}</code> on your local private machine.<br/><br/>
+          <strong>How to test Ollama with this project:</strong>
+          <ul style="padding-left:1.2rem;margin:0.4rem 0;">
+            <li><strong>Option 1 (Recommended for Local Ollama):</strong> Run the app locally! Open <a href="http://localhost:5000/chatbot.html" target="_blank" style="color:var(--accent-cyan);text-decoration:underline;font-weight:700;">http://localhost:5000/chatbot.html</a> — your local Ollama (<code>llama3.2:1b</code>) is already active and connects directly!</li>
+            <li><strong>Option 2 (Tunnel to Vercel):</strong> In PowerShell run: <code>cloudflared tunnel --url http://localhost:11434</code> or <code>ngrok http 11434</code>, then paste that public <code>https://...</code> tunnel URL above and click Test Connection.</li>
+            <li><strong>Option 3 (Cloud Fallback):</strong> Use the <strong>Built-in CTI Engine</strong> which runs 100% cloud-native on Vercel.</li>
+          </ul>
+          <div style="margin-top:0.5rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <button class="btn btn-sm btn-primary" onclick="selectBuiltinAndClose()" style="font-size:0.75rem;"><i class="fas fa-check"></i> Use Built-in Engine Now</button>
+            <a href="http://localhost:5000/chatbot.html" target="_blank" class="btn btn-sm btn-outline" style="font-size:0.75rem;text-decoration:none;"><i class="fas fa-laptop-code"></i> Open Local App</a>
+          </div>
+        </div>
+      `;
+      return;
+    }
 
     try {
       const res = await fetch(`/api/chat/ollama/status?url=${encodeURIComponent(url)}`);

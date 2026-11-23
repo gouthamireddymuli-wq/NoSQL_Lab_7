@@ -64,12 +64,25 @@ def check_ollama(url: Optional[str] = None) -> Dict[str, Any]:
                 "is_local": "localhost" in base_url or "127.0.0.1" in base_url
             }
     except Exception as e:
+        is_local_target = "localhost" in base_url or "127.0.0.1" in base_url
+        is_cloud = bool(os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
+        
+        if is_local_target and is_cloud:
+            err_msg = (
+                "Vercel Cloud is hosted remotely and cannot connect to your personal PC's 'localhost:11434'. "
+                "To use local Ollama: (1) Run this app locally at http://localhost:5000/chatbot.html, or "
+                "(2) Provide a public tunnel URL (e.g. ngrok or Cloudflare tunnel), or (3) Select 'Built-in CTI Engine' for native cloud operation."
+            )
+        else:
+            err_msg = f"Unable to reach Ollama at {base_url}. Ensure Ollama is running ('ollama serve'). Details: {str(e)[:180]}"
+
         return {
             "status": "offline",
             "base_url": base_url,
             "models": [],
-            "error": str(e),
-            "is_local": "localhost" in base_url or "127.0.0.1" in base_url
+            "error": err_msg,
+            "is_local": is_local_target,
+            "is_cloud_env": is_cloud
         }
     return {"status": "offline", "base_url": base_url, "models": []}
 

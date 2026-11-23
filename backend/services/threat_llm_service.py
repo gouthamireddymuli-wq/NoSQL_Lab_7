@@ -87,27 +87,46 @@ def check_ollama(url: Optional[str] = None) -> Dict[str, Any]:
     return {"status": "offline", "base_url": base_url, "models": []}
 
 
-# --- Vector Embeddings (Appendix A Spec) ---
-def mock_embed(text: str, dim: int = 384) -> List[float]:
-    tokens = text.lower().split()
-    seed_val = int(hashlib.md5(text.encode("utf-8")).hexdigest()[:8], 16)
-    rng = random.Random(seed_val)
-    vec = [rng.gauss(0, 1) for _ in range(dim)]
-    
-    cyber_keywords = {
-        "linux": 0, "windows": 10, "macos": 20, "android": 30, "ios": 40, "cloud": 50,
-        "anticipated": 60, "active": 70, "evolving": 80, "resolved": 90,
-        "cve": 100, "mitigation": 110, "ransomware": 120, "vulnerability": 130,
-        "exploit": 140, "patch": 150, "backdoor": 160, "kernel": 170
-    }
-    for word in tokens:
-        clean = re.sub(r'[^a-z0-9]', '', word)
-        if clean in cyber_keywords:
-            idx = cyber_keywords[clean] % dim
-            vec[idx] += 3.5
+# --- Semantic Vector Embeddings (Appendix A Spec) ---
+STOPWORDS = {
+    'what', 'is', 'are', 'the', 'a', 'an', 'and', 'or', 'how', 'to', 'do', 'we',
+    'for', 'in', 'on', 'with', 'of', 'at', 'by', 'give', 'me', 'explain', 'show',
+    'about', 'can', 'you', 'tell', 'list', 'all', 'any'
+}
+
+def semantic_embed(text: str, dim: int = 384) -> List[float]:
+    vec = [0.0] * dim
+    words = [re.sub(r'[^a-z0-9\-]', '', w) for w in text.lower().split()]
+    words = [w for w in words if w and w not in STOPWORDS]
+
+    for i, w in enumerate(words):
+        weight = 1.0
+        if w.startswith('cve-') or 'cve' in w:
+            weight = 15.0
+        elif w in {'xz', 'liblzma', 'lockbit', 'akira', 'volt', 'typhoon', 'amos', 'pwnkit', 'eternalblue', 'shroot', 'teabot', 'darkgate', 'goldpickaxe', 'stagefright', 'blastpass', 'runc', 'log4j', 'clfs', 'byovd', 'stealer'}:
+            weight = 12.0
+        elif w in {'linux', 'windows', 'macos', 'android', 'ios', 'cloud', 'k8s'}:
+            weight = 8.0
+        elif w in {'anticipated', 'active', 'evolving', 'resolved'}:
+            weight = 6.0
+        elif w in {'ransomware', 'backdoor', 'trojan', 'mitigate', 'mitigation', 'patch', 'exploit', 'kernel', 'rootkit', 'smb'}:
+            weight = 4.0
+        
+        # Unigram hash
+        h = int(hashlib.md5(w.encode('utf-8')).hexdigest()[:8], 16) % dim
+        vec[h] += weight
+
+        # Bigram hash
+        if i < len(words) - 1:
+            bg = f"{w}_{words[i+1]}"
+            h_bg = int(hashlib.md5(bg.encode('utf-8')).hexdigest()[:8], 16) % dim
+            vec[h_bg] += weight * 1.5
 
     norm = math.sqrt(sum(v * v for v in vec)) or 1.0
     return [v / norm for v in vec]
+
+def mock_embed(text: str, dim: int = 384) -> List[float]:
+    return semantic_embed(text, dim)
 
 
 def get_embedding(text: str) -> List[float]:

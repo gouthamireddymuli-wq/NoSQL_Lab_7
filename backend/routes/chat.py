@@ -30,13 +30,19 @@ from services.scanner_bot import bot_instance
 
 chat_bp = Blueprint("chat", __name__, url_prefix="/api/chat")
 
-# Seed initial threat knowledge on module import if empty
+EMBEDDING_VERSION = 2
+
+# Seed initial threat knowledge on module import if empty or outdated
 def _ensure_initial_ingestion():
     try:
         db = get_db()
         col = db["document_chunks"]
-        if col.count_documents({}) == 0:
+        meta_col = db["system_metadata"]
+        ver_doc = meta_col.find_one({"key": "embedding_version"})
+        if col.count_documents({}) == 0 or not ver_doc or ver_doc.get("version") != EMBEDDING_VERSION:
             ingest_threat_documents(COMPREHENSIVE_THREATS)
+            meta_col.update_one({"key": "embedding_version"}, {"$set": {"version": EMBEDDING_VERSION}}, upsert=True)
+            print(f"[Chat Service] Re-indexed {len(COMPREHENSIVE_THREATS)} threats with semantic embedding v{EMBEDDING_VERSION}")
     except Exception as e:
         print("[Chat Service] Initial vector ingestion deferred:", e)
 

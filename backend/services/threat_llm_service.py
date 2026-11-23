@@ -299,17 +299,270 @@ def call_openai(prompt: str, history: List[Dict[str, str]]) -> Tuple[str, str]:
         raise RuntimeError(f"OpenAI error: {e}")
 
 
+CATALOG_KEYWORDS = {
+    'xz', 'liblzma', 'lockbit', 'volt typhoon', 'akira', 'pwnkit', 'eternalblue',
+    'clfs', 'darkgate', 'amos', 'atomic stealer', 'rustbucket', 'shroot',
+    'anatsa', 'teabot', 'chameleon', 'stagefright', 'blastpass', 'forcedentry',
+    'goldpickaxe', 'dma', 'trident', 'runc', 'imds', 'kinsing', 'log4j', 'log4shell'
+}
+
+CATALOG_CATEGORIES = {'anticipated', 'active', 'evolving', 'resolved', 'threat catalog', 'list threats', 'show threats'}
+
+def is_catalog_query(msg: str) -> bool:
+    m = msg.lower()
+    if re.search(r'cve-\d{4}-\d+', m):
+        return True
+    if any(k in m for k in CATALOG_KEYWORDS):
+        return True
+    if any(c in m for c in CATALOG_CATEGORIES) and any(p in m for p in ['linux', 'windows', 'macos', 'android', 'ios', 'cloud', 'threat']):
+        return True
+    return False
+
+
+def builtin_general_security_responder(query: str, platform: Optional[str] = None) -> str:
+    """Provides high-quality, comprehensive cybersecurity answers for any general topic."""
+    q = query.lower().strip()
+
+    # Greetings & Identity
+    if any(q.startswith(g) or q == g for g in ["hi", "hello", "hey", "who are you", "what can you do", "help", "greet"]):
+        return (
+            "### 🛡️ Welcome to the Cyber Threat Intelligence (CTI) AI Assistant\n\n"
+            "I am your dedicated **Cyber Threat Intelligence Analyst and Systems Hardening Bot**, "
+            "powered by **Ollama SLM (Localhost)**, **MongoDB Vector RAG**, and an autonomous vulnerability scanner.\n\n"
+            "#### What I Can Help You With:\n"
+            "1. **Threat Intelligence Triage:** Query **Anticipated**, **Active**, **Evolving**, and **Resolved** threats across **Linux**, **Windows**, **macOS**, **Android**, **iOS**, and **Cloud**.\n"
+            "2. **Autonomous Security Auditing:** Type `Scan system` to audit local open ports and sensitive file permissions for vulnerabilities.\n"
+            "3. **Conversational Mitigation:** Reply `Confirm mitigate all` to automatically harden discovered vulnerabilities with audit logging in MongoDB.\n"
+            "4. **General Cybersecurity Guidance:** Ask about web vulnerabilities (SQLi, XSS), defensive architecture (Zero Trust, Firewalls), or operating system hardening.\n\n"
+            "👉 *Try asking:* `What is SQL Injection?` or `What are the Anticipated threats for Linux?` or `Scan system for vulnerabilities`."
+        )
+
+    # SQL Injection
+    if "sql injection" in q or "sqli" in q:
+        return (
+            "### 🛡️ Web Application Security: SQL Injection (SQLi) Vulnerability\n\n"
+            "**Category:** OWASP Top 10 — A03:2021-Injection | **Severity:** `CRITICAL`\n\n"
+            "#### 1. Threat Mechanism\n"
+            "SQL Injection occurs when untrusted user input is directly concatenated into a dynamic SQL database query without validation or parameterized separation. "
+            "An attacker injects SQL metacharacters (such as `' OR '1'='1`) to manipulate query logic, bypass authentication, exfiltrate sensitive data, or execute administrative commands.\n\n"
+            "#### 2. Technical Mitigation Procedures\n"
+            "- **Primary Defense:** Always use **Parameterized Queries (Prepared Statements)** or Object-Relational Mapping (ORM) frameworks with parameter binding.\n"
+            "- **Principle of Least Privilege:** Restrict database accounts to only necessary tables and permissions; disable administrative database accounts for web services.\n"
+            "- **Input Validation:** Enforce strict allow-lists and data typing for all query inputs.\n"
+            "- **Web Application Firewall (WAF):** Deploy ModSecurity or cloud WAFs with SQLi inspection rulesets.\n\n"
+            "#### 3. Secure Implementation Example (Python / PyMongo & SQL)\n"
+            "```python\n"
+            "# Vulnerable (Dynamic concatenation):\n"
+            "# cursor.execute(f\"SELECT * FROM users WHERE user = '{username}'\")\n\n"
+            "# Secure (Parameterized query):\n"
+            "cursor.execute(\"SELECT * FROM users WHERE user = %s AND pass = %s\", (username, password_hash))\n\n"
+            "# In MongoDB (NoSQL injection prevention):\n"
+            "# Validate input type is string to prevent operator injection ({'$gt': ''}):\n"
+            "if isinstance(username, str):\n"
+            "    user = db.users.find_one({'username': username})\n"
+            "```\n\n"
+            "#### 4. Verification & Testing Command\n"
+            "```bash\n"
+            "# Test endpoints with sqlmap (authorized security audit only):\n"
+            "sqlmap -u \"https://example.com/api/user?id=1\" --batch --risk=1 --level=1\n"
+            "```"
+        )
+
+    # Phishing
+    if "phishing" in q:
+        return (
+            "### 🛡️ Social Engineering & Email Defense: Phishing Mitigation\n\n"
+            "**Category:** Initial Access & Credential Harvesting | **Severity:** `HIGH`\n\n"
+            "#### 1. Threat Mechanism\n"
+            "Phishing involves deceptive electronic communications (email, SMS/Smishing, voice/Vishing) impersonating trusted entities "
+            "to lure targets into revealing credentials, executing malicious payload attachments, or authorizing fraudulent transactions.\n\n"
+            "#### 2. Key Mitigation Controls\n"
+            "- **Enforce Email Authentication Standards:**\n"
+            "  - **SPF (Sender Policy Framework):** Authorizes mail servers permitted to send on your domain's behalf.\n"
+            "  - **DKIM (DomainKeys Identified Mail):** Cryptographically signs emails to verify integrity.\n"
+            "  - **DMARC (Domain-based Message Authentication):** Enforces strict quarantine or reject policies (`p=reject`).\n"
+            "- **Phishing-Resistant MFA:** Deploy **FIDO2 / WebAuthn hardware security keys** (YubiKeys) which bind authentication to the origin URL, eliminating credential theft via reverse-proxy toolkits (Evilginx).\n"
+            "- **Endpoint Filtering:** Enforce DNS filtering (Cloudflare 1.1.1.2 or Quad9) and automated mail sandboxing.\n\n"
+            "#### 3. Administrative DNS Hardening (DMARC Policy)\n"
+            "```dns\n"
+            "; Configure strict DMARC TXT record in your DNS zone:\n"
+            "_dmarc.yourdomain.com. IN TXT \"v=DMARC1; p=reject; rua=mailto:dmarc-reports@yourdomain.com; sp=reject; aspf=s; adkim=s;\"\n"
+            "```\n\n"
+            "#### 4. Verification Check Command\n"
+            "```bash\n"
+            "# Verify domain DMARC and SPF records:\n"
+            "dig TXT _dmarc.yourdomain.com +short\n"
+            "dig TXT yourdomain.com +short | grep -i spf\n"
+            "```"
+        )
+
+    # Firewalls & UFW
+    if "ufw" in q or ("firewall" in q and ("linux" in q or "ubuntu" in q or "debian" in q)) or "iptables" in q:
+        return (
+            "### 🛡️ Linux Network Defense: UFW (Uncomplicated Firewall) Hardening\n\n"
+            "**Platform:** Linux (Ubuntu / Debian) | **Classification:** Host-Based Network Filtering\n\n"
+            "#### 1. Recommended Baseline Firewall Architecture\n"
+            "The baseline firewall strategy follows the **Default Deny** security posture: drop all inbound connections, allow established traffic, "
+            "and explicitly whitelist only necessary service ports with subnet restrictions.\n\n"
+            "#### 2. Step-by-Step Configuration Script\n"
+            "```bash\n"
+            "# Step 1: Set default policies to deny incoming, allow outgoing\n"
+            "sudo ufw default deny incoming\n"
+            "sudo ufw default allow outgoing\n\n"
+            "# Step 2: Allow essential SSH access (rate-limited against brute force)\n"
+            "sudo ufw limit 22/tcp comment 'Rate-limited SSH'\n\n"
+            "# Step 3: Allow web services (HTTP/HTTPS)\n"
+            "sudo ufw allow 80/tcp comment 'Web HTTP'\n"
+            "sudo ufw allow 443/tcp comment 'Web HTTPS'\n\n"
+            "# Step 4: Restrict MongoDB (27017) to localhost or specific internal subnet\n"
+            "sudo ufw allow from 127.0.0.1 to any port 27017 proto tcp comment 'MongoDB local'\n\n"
+            "# Step 5: Enable UFW service\n"
+            "sudo ufw --force enable\n"
+            "```\n\n"
+            "#### 3. Verification Command\n"
+            "```bash\n"
+            "sudo ufw status verbose\n"
+            "```"
+        )
+
+    # Zero Trust
+    if "zero trust" in q:
+        return (
+            "### 🛡️ Enterprise Security Architecture: Zero Trust Principles & Implementation\n\n"
+            "**Framework:** NIST SP 800-207 Zero Trust Architecture (ZTA)\n\n"
+            "#### 1. Core Principles\n"
+            "- **Never Trust, Always Verify:** No user, device, or workload is inherently trusted based on physical or network location (internal vs external).\n"
+            "- **Least Privilege Access:** Access is granted per-session on a just-in-time (JIT) and just-enough-access (JEA) basis.\n"
+            "- **Assume Breach:** Architecture is designed assuming malicious actors are already present in the environment.\n\n"
+            "#### 2. Key Pillars of Implementation\n"
+            "1. **Identity & Access Management (IAM):** Continuous adaptive authentication with conditional access policies and FIDO2 MFA.\n"
+            "2. **Micro-Segmentation:** Dividing the network into granular security zones (e.g. Kubernetes network policies, VPC subnets) preventing lateral movement.\n"
+            "3. **Device Health Verification:** Validating endpoint posture (EDR running, disk encrypted, OS updated) before granting session tokens.\n"
+            "4. **Continuous Telemetry & Analytics:** Ingesting access logs into SIEM/SOAR platforms for automated anomaly detection.\n\n"
+            "#### 3. Verification Check Command\n"
+            "```bash\n"
+            "# Audit active open network boundaries and listening ports:\n"
+            "netstat -tulpen || ss -tulpen\n"
+            "```"
+        )
+
+    # Ransomware (General)
+    if "ransomware" in q:
+        return (
+            "### 🛡️ Threat Intelligence Briefing: Ransomware Defense & Resilience Strategy\n\n"
+            "**Classification:** Impact & Extortion Malware | **Severity:** `CRITICAL`\n\n"
+            "#### 1. Attack Lifecycle\n"
+            "Modern double-extortion ransomware campaigns follow an orchestrated kill chain:\n"
+            "1. **Initial Access:** Via phishing, unpatched edge devices (VPNs/firewalls), or compromised valid credentials.\n"
+            "2. **Discovery & Privilege Escalation:** Utilizing living-off-the-land binaries (LoLBins) to map Active Directory and gain Domain Admin.\n"
+            "3. **Data Exfiltration:** Exfiltrating sensitive corporate data prior to encryption to threaten public disclosure.\n"
+            "4. **Payload Execution:** Deploying high-speed encryption routines (ChaCha20, AES-256) and deleting Volume Shadow Copies.\n\n"
+            "#### 2. Defense-in-Depth Mitigation Measures\n"
+            "- **Immutable Backups (3-2-1-1-0 Rule):** 3 copies of data, 2 media types, 1 offsite, 1 immutable (WORM/air-gapped), 0 backup errors.\n"
+            "- **Active Directory Hardening:** Restrict Domain Admin accounts, disable legacy NTLMv1 and SMBv1, enforce Tiered Administration.\n"
+            "- **Network Micro-Segmentation:** Isolate critical hypervisors (ESXi) and database servers on dedicated VLANs with strict firewall rules.\n"
+            "- **EDR with Anti-Ransomware Canaries:** Deploy behavior-based EDR tools that detect rapid entropy changes and canary file touches.\n\n"
+            "#### 3. Immediate Actionable Windows Hardening Command\n"
+            "```powershell\n"
+            "# Enable Windows Controlled Folder Access (ransomware guard):\n"
+            "Set-MpPreference -EnableControlledFolderAccess Enabled\n\n"
+            "# Disable insecure SMBv1 dialect:\n"
+            "Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force\n"
+            "```\n\n"
+            "#### 4. Automated Verification Check\n"
+            "```powershell\n"
+            "Get-MpPreference | Select-Object EnableControlledFolderAccess\n"
+            "Get-SmbServerConfiguration | Select-Object EnableSMB1Protocol\n"
+            "```"
+        )
+
+    # MongoDB Security
+    if "mongodb" in q or "nosql" in q:
+        return (
+            "### 🛡️ Database Hardening: MongoDB Production Security Baseline\n\n"
+            "**Course Reference:** Appendix A & Exercises 1–18 | **Compliance:** CIS MongoDB Benchmark\n\n"
+            "#### 1. Core Security Controls\n"
+            "- **Authentication Enforcement:** Never run MongoDB without authorization. Require SCRAM-SHA-256 credentials.\n"
+            "- **Network Binding:** Bind listener exclusively to `127.0.0.1` or private VPC subnets. Never expose port 27017 to `0.0.0.0` without TLS and authentication.\n"
+            "- **Role-Based Access Control (RBAC):** Assign granular least-privilege roles (`readWrite`, `dbAdmin`) rather than global `root`.\n"
+            "- **TLS 1.3 Encryption in Transit:** Enforce certificate-verified TLS encryption across all client and replica set connections.\n"
+            "- **Auditing:** Log security events (authentication failures, user management actions) into audit collections.\n\n"
+            "#### 2. Hardened MongoDB Configuration (`mongod.conf`)\n"
+            "```yaml\n"
+            "net:\n"
+            "  port: 27017\n"
+            "  bindIp: 127.0.0.1\n"
+            "  tls:\n"
+            "    mode: requireTLS\n"
+            "    certificateKeyFile: /etc/ssl/mongodb.pem\n"
+            "security:\n"
+            "  authorization: enabled\n"
+            "```\n\n"
+            "#### 3. Verification Command\n"
+            "```bash\n"
+            "# Test connection requiring authentication:\n"
+            "mongosh --tls --tlsCAFile /etc/ssl/ca.pem -u cti_admin -p --authenticationDatabase admin\n"
+            "```"
+        )
+
+    # Cross-Site Scripting (XSS)
+    if "xss" in q or "cross-site scripting" in q or "cross site scripting" in q:
+        return (
+            "### 🛡️ Web Application Security: Cross-Site Scripting (XSS) Mitigation\n\n"
+            "**Category:** OWASP Top 10 — A03:2021-Injection | **Severity:** `HIGH`\n\n"
+            "#### 1. Threat Mechanism\n"
+            "XSS occurs when malicious scripts are injected into benign and trusted websites. Attackers execute arbitrary JavaScript in the victim's browser context to steal session cookies, capture keystrokes, or redirect to malicious domains.\n\n"
+            "#### 2. Primary Defenses\n"
+            "- **Context-Aware Output Encoding:** HTML, attribute, JavaScript, and URL encoding before inserting user-controlled data into HTML.\n"
+            "- **Content Security Policy (CSP):** Strict CSP headers restricting script execution sources and disallowing inline scripts (`'unsafe-inline'`).\n"
+            "- **HttpOnly and SameSite Cookies:** Enforcing `HttpOnly` flags to prevent JavaScript cookie theft (`document.cookie`).\n\n"
+            "#### 3. Strict CSP Header Implementation\n"
+            "```http\n"
+            "Content-Security-Policy: default-src 'self'; script-src 'self' https://trusted.cdn.com; object-src 'none'; base-uri 'self';\n"
+            "```"
+        )
+
+    # DDoS (Distributed Denial of Service)
+    if "ddos" in q or "dos" in q or "denial of service" in q:
+        return (
+            "### 🛡️ Network Resilience: Distributed Denial of Service (DDoS) Mitigation\n\n"
+            "**Category:** Availability & Infrastructure Resilience | **Severity:** `HIGH`\n\n"
+            "#### 1. Attack Vectors\n"
+            "- **Volumetric (L3/L4):** UDP amplification, DNS reflection, ICMP floods designed to saturate bandwidth pipe.\n"
+            "- **Protocol (L4):** SYN flood, Ping of Death consuming server and stateful firewall connection tables.\n"
+            "- **Application Layer (L7):** HTTP GET/POST flood (Slowloris) exhausting web worker threads and database pools.\n\n"
+            "#### 2. Defense Strategy\n"
+            "- **Anycast DNS & Cloud Scrubbing Centers:** Cloudflare, AWS Shield, or Akamai absorbing multi-terabit volumetric traffic.\n"
+            "- **SYN Cookies & TCP Tuning:** Mitigating SYN floods in Linux kernel:\n"
+            "  `sudo sysctl -w net.ipv4.tcp_syncookies=1`\n"
+            "- **Rate Limiting:** Web server rate limiting on API endpoints via Nginx (`limit_req_zone`) or cloud gateways."
+        )
+
+    # Dynamic Fallback for Any General Security / IT Question
+    return (
+        f"### 🛡️ Cybersecurity Technical Assessment: {query.title()}\n\n"
+        f"**Platform Context:** `{platform or 'Cross-Platform'}` | **Domain:** Infrastructure & Application Security\n\n"
+        f"#### 1. Technical Analysis\n"
+        f"Regarding **'{query}'**, standard cybersecurity best practices require implementing defense-in-depth, "
+        f"continuous posture validation, and strict least-privilege access across all architecture tiers.\n\n"
+        f"#### 2. Key Defensive Recommendations\n"
+        f"- **Access Control:** Enforce Multi-Factor Authentication (MFA) and granular Role-Based Access Control (RBAC).\n"
+        f"- **Patch Management:** Regularly audit dependencies, containers, and operating systems against CVE advisories.\n"
+        f"- **Network Segmentation:** Enforce host firewalls and isolate critical database tiers from direct internet exposure.\n"
+        f"- **Telemetry & Auditing:** Centralize audit logs and configure automated alerting for abnormal behavioral anomalies.\n\n"
+        f"#### 3. Recommended Administrative Verification\n"
+        f"```bash\n"
+        f"# Inspect active host listeners and security posture:\n"
+        f"netstat -tulpen || ss -tulpen\n"
+        f"```\n\n"
+        f"👉 *You can also ask:* `'Scan system'` to have the autonomous bot audit this host for vulnerabilities."
+    )
+
+
 def builtin_cti_engine(query: str, sources: List[Dict[str, Any]], requested_platform: Optional[str] = None, requested_status: Optional[str] = None) -> str:
     """Intelligent built-in CTI reasoning engine for instant deterministic threat mitigation."""
     if not sources:
-        return (
-            f"### 🛡️ CTI Platform Threat Intelligence Advisory\n\n"
-            f"No specific threat vectors found in vector index for query: **'{query}'** "
-            f"under platform **{requested_platform or 'All'}** ({requested_status or 'All Statuses'}).\n\n"
-            f"**Recommended Action:**\n"
-            f"1. Ingest CTI vectors via `POST /api/chat/ingest`.\n"
-            f"2. Run a background platform vulnerability scan (`Scan system`)."
-        )
+        return builtin_general_security_responder(query, platform=requested_platform)
 
     top_hit = sources[0]
     raw = top_hit.get("raw_threat", {})
@@ -375,8 +628,9 @@ def execute_chat(
     db = get_db()
     sessions_col = db["sessions"]
 
-    # 1. Retrieve RAG context
-    sources = retrieve_context(message, platform=platform, threat_status=threat_status, top_k=top_k)
+    # 1. Retrieve RAG context if query relates to specific CTI threat catalog
+    is_catalog = is_catalog_query(message)
+    sources = retrieve_context(message, platform=platform, threat_status=threat_status, top_k=top_k) if is_catalog else []
 
     # 2. Load conversation history
     session_doc = sessions_col.find_one({"session_id": session_id})
@@ -388,16 +642,23 @@ def execute_chat(
     engine_used = "Built-in CTI Engine"
 
     # Context block for LLM prompt
-    context_block = "\n\n".join(
-        f"[{s['source']} - Platform: {s['platform']} - Status: {s['status']} - Severity: {s['severity']}]\n{s['text']}"
-        for s in sources
-    )
-    llm_prompt = (
-        f"CTI Knowledge Context:\n{context_block}\n\n"
-        f"User Inquiry: {message}\n"
-        f"Target Platform Filter: {platform or 'Any'}\n"
-        f"Lifecycle Status Filter: {threat_status or 'Any'}"
-    )
+    if is_catalog and sources:
+        context_block = "\n\n".join(
+            f"[{s['source']} - Platform: {s['platform']} - Status: {s['status']} - Severity: {s['severity']}]\n{s['text']}"
+            for s in sources
+        )
+        llm_prompt = (
+            f"CTI Knowledge Context:\n{context_block}\n\n"
+            f"User Inquiry: {message}\n"
+            f"Target Platform Filter: {platform or 'Any'}\n"
+            f"Lifecycle Status Filter: {threat_status or 'Any'}"
+        )
+    else:
+        llm_prompt = (
+            f"User Inquiry: {message}\n"
+            f"Target Platform: {platform or 'General'}\n"
+            f"Please provide an authoritative, clear, and comprehensive technical answer with defensive best practices and code or shell commands where applicable."
+        )
 
     # Attempt Ollama if requested or if in auto/ollama mode
     if selected_backend in ["ollama", "auto"]:
@@ -408,25 +669,22 @@ def execute_chat(
                 model=model,
                 base_url=ollama_url
             )
-            # If Ollama responded with a refusal or cut off without mitigation commands, augment with verified CTI mitigations
-            refusal_patterns = [
-                "can't provide specific details or guidance on how to mitigate",
-                "cannot provide specific details",
-                "cannot provide guidance on how to mitigate",
-                "i cannot provide",
-                "i can't provide",
-                "illegal and unethical",
-                "as an ai"
-            ]
-            has_refusal = any(p in response_text.lower() for p in refusal_patterns)
-            has_commands = "```" in response_text
-            
-            if has_refusal or not has_commands:
-                # Strip out refusal sentences cleanly
-                cleaned_text = re.sub(r'I (?:can\'t|cannot) provide [^\.\n]+(?:\.|\n)', '', response_text, flags=re.IGNORECASE).strip()
+            # Only augment if it's a catalog threat AND Ollama refused
+            if is_catalog and sources:
+                refusal_patterns = [
+                    "can't provide specific details or guidance on how to mitigate",
+                    "cannot provide specific details",
+                    "cannot provide guidance on how to mitigate",
+                    "i cannot provide",
+                    "i can't provide",
+                    "illegal and unethical",
+                    "as an ai"
+                ]
+                has_refusal = any(p in response_text.lower() for p in refusal_patterns)
+                has_commands = "```" in response_text
                 
-                # Append authoritative mitigation and verification command from retrieved CTI database
-                if sources:
+                if has_refusal or not has_commands:
+                    cleaned_text = re.sub(r'I (?:can\'t|cannot) provide [^\.\n]+(?:\.|\n)', '', response_text, flags=re.IGNORECASE).strip()
                     top = sources[0]
                     raw = top.get("raw_threat", {})
                     title = raw.get("title", top.get("source", "Threat Advisory"))
@@ -444,18 +702,27 @@ def execute_chat(
                     )
                     response_text = (cleaned_text + mitigation_block).strip()
         except Exception as e:
-            # Fallback to Built-in CTI Engine with notice
-            fallback_text = builtin_cti_engine(message, sources, requested_platform=platform, requested_status=threat_status)
+            # Fallback to Built-in Engine with notice
+            if is_catalog and sources:
+                fallback_text = builtin_cti_engine(message, sources, requested_platform=platform, requested_status=threat_status)
+            else:
+                fallback_text = builtin_general_security_responder(message, platform=platform)
             response_text = fallback_text
             engine_used = f"Built-in CTI Engine (Ollama Offline: {str(e)[:60]}...)"
     elif selected_backend == "openai" and OPENAI_API_KEY:
         try:
             response_text, engine_used = call_openai(llm_prompt, history[-4:])
         except Exception as e:
-            response_text = builtin_cti_engine(message, sources, requested_platform=platform, requested_status=threat_status)
+            if is_catalog and sources:
+                response_text = builtin_cti_engine(message, sources, requested_platform=platform, requested_status=threat_status)
+            else:
+                response_text = builtin_general_security_responder(message, platform=platform)
             engine_used = f"Built-in CTI Engine (OpenAI fallback: {e})"
     else:
-        response_text = builtin_cti_engine(message, sources, requested_platform=platform, requested_status=threat_status)
+        if is_catalog and sources:
+            response_text = builtin_cti_engine(message, sources, requested_platform=platform, requested_status=threat_status)
+        else:
+            response_text = builtin_general_security_responder(message, platform=platform)
         engine_used = "Built-in CTI Engine"
 
     # 4. Save history in MongoDB (Appendix A specification)

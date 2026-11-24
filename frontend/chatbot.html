@@ -216,6 +216,12 @@
         </div>
       </div>
 
+      <!-- Ollama Integration Status Banner -->
+      <div id="ollama-integration-banner" style="display:none;padding:0.75rem 1rem;border-radius:8px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;">
+        <div id="ollama-banner-text" style="font-size:0.85rem;line-height:1.4;"></div>
+        <div id="ollama-banner-action"></div>
+      </div>
+
       <!-- AI Engine & Ollama Control Strip -->
       <div class="engine-card">
         <div style="display:flex;align-items:center;gap:0.75rem;">
@@ -675,6 +681,11 @@
     const subtext = document.getElementById("ollama-subtext");
     const modelSelect = document.getElementById("ollama-model-selector");
     const navEngine = document.getElementById("nav-engine-status");
+    const banner = document.getElementById("ollama-integration-banner");
+    const bannerText = document.getElementById("ollama-banner-text");
+    const bannerAction = document.getElementById("ollama-banner-action");
+
+    const isLocalHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 
     try {
       const param = customOllamaUrl ? `?url=${encodeURIComponent(customOllamaUrl)}` : "";
@@ -683,9 +694,28 @@
 
       if (data.status === "connected") {
         badge.className = "badge badge-low";
-        badge.innerHTML = `<i class="fas fa-check-circle"></i> Connected (${data.count} models)`;
-        subtext.innerHTML = `Endpoint: <code>${data.base_url}</code> · Active: <strong>${data.active_model}</strong>`;
+        badge.innerHTML = `<i class="fas fa-check-circle"></i> Ollama Active (${data.active_model})`;
+        subtext.innerHTML = `Running local SLM at <code>${data.base_url}</code> · Model: <strong>${data.active_model}</strong>`;
         if (navEngine) navEngine.innerText = `Ollama: ${data.active_model}`;
+
+        // Ensure Ollama is active
+        selectedEngine = "ollama";
+        localStorage.setItem("cti_engine", "ollama");
+        if (engineSelect) engineSelect.value = "ollama";
+
+        // Show prominent connected banner
+        if (banner) {
+          banner.style.display = "flex";
+          banner.style.background = "rgba(16, 185, 129, 0.12)";
+          banner.style.border = "1px solid rgba(16, 185, 129, 0.4)";
+          bannerText.innerHTML = `
+            <div style="color:#6ee7b7;font-weight:700;"><i class="fas fa-check-circle" style="color:var(--accent-green);margin-right:0.4rem;"></i> Ollama SLM Integrated &amp; Connected</div>
+            <div style="color:#d1fae5;font-size:0.8rem;margin-top:0.2rem;">All chat inquiries are being processed live by your local model <strong>${data.active_model}</strong> on <code>${data.base_url}</code>.</div>
+          `;
+          bannerAction.innerHTML = `
+            <button class="btn btn-sm btn-outline" style="font-size:0.75rem;" onclick="openOllamaSettings()"><i class="fas fa-sliders-h"></i> Settings</button>
+          `;
+        }
 
         // Populate model dropdown
         if (data.models && data.models.length && modelSelect) {
@@ -704,6 +734,31 @@
           `Vercel Serverless: Using Built-in CTI Engine. <a href="javascript:openOllamaSettings()" style="color:var(--accent-cyan);text-decoration:underline;">Click to connect local Ollama via Tunnel</a>` :
           `Local Ollama offline at <code>${data.base_url}</code>. Ensure <code>ollama serve</code> is running.`;
         if (navEngine) navEngine.innerText = isVercel ? "Vercel: CTI Engine" : "CTI Built-in";
+
+        if (banner) {
+          banner.style.display = "flex";
+          if (isVercel) {
+            banner.style.background = "rgba(14, 165, 233, 0.12)";
+            banner.style.border = "1px solid rgba(14, 165, 233, 0.35)";
+            bannerText.innerHTML = `
+              <div style="color:#7dd3fc;font-weight:700;"><i class="fas fa-info-circle" style="color:var(--accent-cyan);margin-right:0.4rem;"></i> Viewing on Vercel Cloud</div>
+              <div style="color:#e0f2fe;font-size:0.8rem;margin-top:0.2rem;">To chat directly with your laptop's downloaded <strong>Ollama SLM (llama3.2:1b)</strong>, open your local app at <strong>http://localhost:5000/chatbot.html</strong>!</div>
+            `;
+            bannerAction.innerHTML = `
+              <a href="http://localhost:5000/chatbot.html" target="_blank" class="btn btn-sm btn-primary" style="font-size:0.75rem;padding:0.35rem 0.75rem;text-decoration:none;"><i class="fas fa-laptop-code"></i> Open Localhost Ollama</a>
+            `;
+          } else {
+            banner.style.background = "rgba(239, 68, 68, 0.12)";
+            banner.style.border = "1px solid rgba(239, 68, 68, 0.35)";
+            bannerText.innerHTML = `
+              <div style="color:#fca5a5;font-weight:700;"><i class="fas fa-exclamation-triangle" style="color:var(--accent-red);margin-right:0.4rem;"></i> Ollama Not Detected on localhost:11434</div>
+              <div style="color:#fee2e2;font-size:0.8rem;margin-top:0.2rem;">Make sure Ollama is running ('ollama serve') or use the Built-in CTI Engine.</div>
+            `;
+            bannerAction.innerHTML = `
+              <button class="btn btn-sm btn-outline" style="font-size:0.75rem;" onclick="testOllamaConnection()"><i class="fas fa-sync-alt"></i> Retry Connection</button>
+            `;
+          }
+        }
       }
     } catch (e) {
       badge.className = "badge badge-type";

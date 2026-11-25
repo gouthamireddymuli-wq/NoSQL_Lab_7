@@ -61,6 +61,7 @@
       <a href="#activity-8-2-try" style="font-size:0.85rem;"><i class="fas fa-angle-right"></i> Activity 8.2 Try It: Priority Elections</a>
     </div>
   </div>
+      <div style="margin-bottom:1.25rem;display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;"><a href="reports/Lab_Experiments_Report_Chapters_1_18.pdf" target="_blank" class="btn btn-outline btn-sm"><i class="fas fa-file-pdf" style="color:var(--accent-red);"></i> Download Chapter 8 PDF</a><a href="reports/Lab_Experiments_Report_Chapters_1_18.pdf" target="_blank" class="btn btn-ghost btn-sm"><i class="fas fa-book"></i> Full Curriculum Report (Ch 1–18 PDF)</a><a href="labs.html" class="btn btn-ghost btn-sm"><i class="fas fa-arrow-left"></i> Back to Labs Portal</a></div>
 
   <!-- ============================================================ -->
   <!-- LAB 8.1: DEPLOY LOCAL REPLICA SET                            -->
@@ -565,6 +566,22 @@
 
 <div id="toast-container"></div>
 
+
+      <!-- Interactive Live Simulation Panel -->
+      <div class="card" style="margin-top:1.5rem;margin-bottom:1.5rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+          <div>
+            <h3 style="font-size:1.1rem;color:var(--accent-cyan);">
+              <i class="fas fa-terminal"></i> Interactive Server-Side Simulator: Lab 8
+            </h3>
+            <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;">Execute live Chapter 8 simulation on the CTI backend engine.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="runLab8Simulation()"><i class="fas fa-play"></i> Run Simulation</button>
+        </div>
+        <div id="sim-output-8" style="background:#050811;border:1px solid var(--card-border);border-radius:4px;padding:1rem;color:#38bdf8;font-family:var(--font-mono);font-size:0.8rem;max-height:260px;overflow-y:auto;">
+          Click "Run Simulation" to execute the Lab 8 backend simulation.
+        </div>
+      </div>
     </div>
   </main>
 </div>
@@ -896,6 +913,22 @@
   };
 
 </script>
-<script type="module" src="js/sidebar.js"></script>
+<script type="module" src="js/sidebar.js">
+  window.runLab8Simulation = async function() {
+    const box = document.getElementById("sim-output-8");
+    box.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running Lab 8 simulation...';
+    try {
+      const res = await fetch("/api/labs/simulate/lab-8", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      box.innerHTML = '<pre style="margin:0;"><code>' + JSON.stringify(data, null, 2).replace(/</g, "&lt;") + '</code></pre>';
+    } catch (e) {
+      box.innerHTML = '<span style="color:var(--accent-red);">Simulation error: ' + e.message + '</span>';
+    }
+  };
+</script>
 </body>
 </html>

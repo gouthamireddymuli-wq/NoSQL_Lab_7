@@ -674,10 +674,13 @@ def execute_chat(
             if is_catalog and sources:
                 refusal_patterns = [
                     "can't provide specific details or guidance on how to mitigate",
+                    "can’t provide specific details or guidance on how to mitigate",
                     "cannot provide specific details",
                     "cannot provide guidance on how to mitigate",
                     "i cannot provide",
                     "i can't provide",
+                    "i can’t provide",
+                    "illegal or harmful",
                     "illegal and unethical",
                     "as an ai"
                 ]
@@ -685,7 +688,9 @@ def execute_chat(
                 has_commands = "```" in response_text
                 
                 if has_refusal or not has_commands:
-                    cleaned_text = re.sub(r'I (?:can\'t|cannot) provide [^\.\n]+(?:\.|\n)', '', response_text, flags=re.IGNORECASE).strip()
+                    # Strip any safety refusal or apology sentences (both straight and curly quotes)
+                    cleaned_text = re.sub(r'I (?:can[\'’]t|cannot) provide [^\.\n]+(?:\.|\n|\?)?', '', response_text, flags=re.IGNORECASE)
+                    cleaned_text = re.sub(r'Is there anything else I can help you with\??', '', cleaned_text, flags=re.IGNORECASE).strip()
                     top = sources[0]
                     raw = top.get("raw_threat", {})
                     title = raw.get("title", top.get("source", "Threat Advisory"))

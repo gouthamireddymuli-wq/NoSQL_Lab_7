@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CTI Platform — Lab 1: NoSQL Database Families &amp; Application Mapping</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <div style="display:flex;align-items:center;">
+    <button id="sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar"><i class="fas fa-bars"></i></button>
+    <div class="navbar-brand"><i class="fas fa-shield-virus"></i> CTI Platform <span class="brand-dot"></span></div>
+  </div>
+  <ul class="navbar-nav">
+    <li><a href="index.html"><i class="fas fa-th-large"></i> Dashboard</a></li>
+    <li><a href="indicators.html"><i class="fas fa-crosshairs"></i> Indicators</a></li>
+    <li><a href="reports.html"><i class="fas fa-file-alt"></i> Reports</a></li>
+    <li><a href="actors.html"><i class="fas fa-user-secret"></i> Threat Actors</a></li>
+    <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+    <li><a href="labs.html" class="active"><i class="fas fa-book-open"></i> Labs Portal</a></li>
+    <li><a href="chatbot.html"><i class="fas fa-robot"></i> AI Threat Analyst</a></li>
+  </ul>
+  <div class="navbar-status"><div class="status-indicator"></div><span>Live</span></div>
+</nav>
+
+<div class="app-layout">
+  <aside id="app-sidebar" class="sidebar"></aside>
+
+  <main class="main-content">
+    <div class="page-wrapper" style="max-width:1200px;">
+      
+      <div class="page-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+            <span class="badge badge-purple">Chapter 1</span>
+            <span class="badge badge-low"><i class="fas fa-check-circle"></i> Foundations Complete</span>
+          </div>
+          <h1 class="page-title"><i class="fas fa-project-diagram"></i> Lab 1: NoSQL Database Families &amp; Application Mapping</h1>
+          <p class="page-subtitle">Classification of NoSQL architectures (Document, Key-Value, Wide-Column, Graph) and enterprise Cyber Threat Intelligence workload mapping.</p>
+        </div>
+        <div style="text-align:right;">
+          <a href="reports/Lab_Experiments_Report_Chapters_1_18.pdf" target="_blank" class="btn btn-outline btn-sm">
+            <i class="fas fa-file-pdf" style="color:var(--accent-red);"></i> Download Chapter 1 PDF
+          </a>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.35rem;">
+            Student: <strong>M Gouthami</strong> (<span style="font-family:var(--font-mono);color:var(--accent-cyan);">24BTRCL130</span>)
+          </div>
+        </div>
+      </div>
+
+      <!-- Core Theory Card -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <h3 style="font-size:1.1rem;color:var(--accent-cyan);margin-bottom:0.75rem;">
+          <i class="fas fa-layer-group"></i> 1. The Four Core NoSQL Database Families
+        </h3>
+        <p style="font-size:0.88rem;color:#cbd5e1;line-height:1.6;margin-bottom:1rem;">
+          Modern enterprise data architectures reject "one-size-fits-all" relational storage. Relational models impose rigid schemas and expensive table joins across partitioned disks. In contrast, NoSQL architectures optimize data locality and throughput according to specific access patterns.
+        </p>
+
+        <div class="grid-2">
+          <div style="background:rgba(0,0,0,0.3);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--card-border);">
+            <h4 style="color:var(--accent-cyan);font-size:0.9rem;margin-bottom:0.5rem;"><i class="fas fa-file-code"></i> Document Stores (MongoDB, Couchbase)</h4>
+            <p style="font-size:0.82rem;color:#cbd5e1;line-height:1.6;">
+              Store self-describing BSON/JSON records with dynamic, nested subdocuments. Optimal for heterogeneous CTI threat intelligence dossiers, polymorphic IOC observables, and unstructured threat telemetry.
+            </p>
+          </div>
+          <div style="background:rgba(0,0,0,0.3);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--card-border);">
+            <h4 style="color:var(--accent-green);font-size:0.9rem;margin-bottom:0.5rem;"><i class="fas fa-bolt"></i> Key-Value Stores (Redis, Memcached)</h4>
+            <p style="font-size:0.82rem;color:#cbd5e1;line-height:1.6;">
+              Simple dictionary mapping with sub-millisecond in-memory lookups. Optimal for session authentication tokens, rate-limiting counters, and caching hot threat indicators.
+            </p>
+          </div>
+          <div style="background:rgba(0,0,0,0.3);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--card-border);">
+            <h4 style="color:#f59e0b;font-size:0.9rem;margin-bottom:0.5rem;"><i class="fas fa-table"></i> Wide-Column Stores (Cassandra, HBase)</h4>
+            <p style="font-size:0.82rem;color:#cbd5e1;line-height:1.6;">
+              Sparse multidimensional tables partitioned across cluster nodes using partition keys. Engineered for high-throughput append-only time-series firewall logs and network flow records.
+            </p>
+          </div>
+          <div style="background:rgba(0,0,0,0.3);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--card-border);">
+            <h4 style="color:var(--accent-purple);font-size:0.9rem;margin-bottom:0.5rem;"><i class="fas fa-share-alt"></i> Graph Databases (Neo4j, Amazon Neptune)</h4>
+            <p style="font-size:0.82rem;color:#cbd5e1;line-height:1.6;">
+              Index-free adjacency where nodes and relationships are first-class primitives. Optimal for APT attribution graphs, supply-chain dependency trees, and attack path traversal.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Workload Mapping Matrix -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <h3 style="font-size:1.1rem;color:var(--accent-cyan);margin-bottom:0.75rem;">
+          <i class="fas fa-exchange-alt"></i> 2. Enterprise Cyber Threat Intelligence Workload Mapping
+        </h3>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Workload Profile</th>
+                <th>Access Pattern</th>
+                <th>Optimal Paradigm</th>
+                <th>Selected Engine</th>
+                <th>Architecture Justification</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Threat Intelligence Dossiers</strong></td>
+                <td>Polymorphic documents, nested arrays</td>
+                <td>Document Store</td>
+                <td><span class="badge badge-low">MongoDB</span></td>
+                <td>Flexible BSON schema stores varying attributes per threat vector without schema migration downtime.</td>
+              </tr>
+              <tr>
+                <td><strong>High-Velocity Flow Logs</strong></td>
+                <td>100,000+ writes/sec, append-only time series</td>
+                <td>Wide-Column</td>
+                <td><span class="badge badge-type">Cassandra</span></td>
+                <td>Linear write scaling with LSM-tree storage engines and zero single point of failure.</td>
+              </tr>
+              <tr>
+                <td><strong>Session &amp; Token Caching</strong></td>
+                <td>O(1) sub-millisecond latency lookup</td>
+                <td>Key-Value</td>
+                <td><span class="badge badge-low">Redis</span></td>
+                <td>In-memory data structures eliminate disk I/O bottlenecks during user authentication.</td>
+              </tr>
+              <tr>
+                <td><strong>APT Attack Path Traversal</strong></td>
+                <td>Multi-hop relationship navigation (N:M)</td>
+                <td>Graph Store</td>
+                <td><span class="badge badge-purple">Neo4j</span></td>
+                <td>Traverses multi-tiered adversary infrastructure without explosive relational join penalties.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Interactive Live Simulation Panel -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+          <div>
+            <h3 style="font-size:1.1rem;color:var(--accent-cyan);">
+              <i class="fas fa-terminal"></i> 3. Interactive Server-Side Simulator: Lab 1
+            </h3>
+            <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;">Execute live classification mapping on the backend engine.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="runLab1Simulation()"><i class="fas fa-play"></i> Run Simulation</button>
+        </div>
+
+        <div id="sim-output" style="background:#050811;border:1px solid var(--card-border);border-radius:4px;padding:1rem;color:#38bdf8;font-family:var(--font-mono);font-size:0.8rem;max-height:260px;overflow-y:auto;">
+          Click "Run Simulation" to execute the Lab 1 classification matrix engine.
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script type="module">
+  import { initSidebar } from './js/sidebar.js';
+  import { showToast, escHtml } from './js/utils.js';
+  initSidebar();
+
+  window.runLab1Simulation = async function() {
+    const box = document.getElementById("sim-output");
+    box.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Running classification engine...`;
+    try {
+      const res = await fetch("/api/labs/simulate/lab-1", { method: "POST" });
+      const data = await res.json();
+      box.innerHTML = `<pre style="margin:0;"><code>${escHtml(JSON.stringify(data, null, 2))}</code></pre>`;
+      showToast("Lab 1 simulation executed successfully!");
+    } catch (e) {
+      box.innerHTML = `<span style="color:var(--accent-red);">Simulation error: ${e.message}</span>`;
+    }
+  };
+</script>
+<script src="js/floating_chat.js"></script>
+</body>
+</html>

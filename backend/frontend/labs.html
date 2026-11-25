@@ -55,6 +55,14 @@
           </div>
           <h1 class="page-title"><i class="fas fa-book-open"></i> NoSQL MongoDB Labs Curriculum (Labs 1 to 18 &amp; Appendix A)</h1>
           <p class="page-subtitle">Production Cyber Threat Intelligence Architecture — Complete curriculum from NoSQL Foundations to AI Vector RAG &amp; Autonomous Mitigation Bots.</p>
+          <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-top:0.75rem;">
+            <a href="reports/Lab_Experiments_Report_Chapters_1_18.pdf" target="_blank" class="btn btn-primary btn-sm">
+              <i class="fas fa-file-pdf"></i> Download Official Full Report (Labs 1–18 PDF)
+            </a>
+            <a href="reports/Mini_Project_Report_LLM_Chatbot.pdf" target="_blank" class="btn btn-outline btn-sm">
+              <i class="fas fa-robot"></i> Download Mini-Project Chatbot Report (PDF)
+            </a>
+          </div>
         </div>
 
         <!-- Student ID Card -->
@@ -159,6 +167,32 @@
   import { initSidebar } from './js/sidebar.js';
   import { showToast, escHtml } from './js/utils.js';
 
+  const REPORT_LINK_MAP = {
+    'lab-1': 'lab1_reports.html',
+    'lab-2': 'lab2_reports.html',
+    'lab-3': 'lab3_reports.html',
+    'lab-4': 'lab4_reports.html',
+    'lab-5': 'lab5_reports.html',
+    'lab-6': 'lab6_reports.html',
+    'lab-7': 'lab_reports.html',
+    'lab-8': 'lab8_reports.html',
+    'lab-9': 'lab9_reports.html',
+    'lab-10': 'lab10_reports.html',
+    'lab-11': 'lab11_reports.html',
+    'lab-12': 'lab12_reports.html',
+    'lab-13': 'lab13_reports.html',
+    'lab-14': 'lab14_reports.html',
+    'lab-15': 'lab15_reports.html',
+    'lab-16': 'lab16_reports.html',
+    'lab-17': 'lab17_reports.html',
+    'lab-18': 'lab18_reports.html',
+    'appendix-a': 'chatbot.html'
+  };
+
+  function getReportLink(lab) {
+    return lab.report_url || REPORT_LINK_MAP[lab.id] || 'lab_reports.html';
+  }
+
   let allLabs = [];
 
   async function loadLabsCatalog() {
@@ -202,7 +236,7 @@
         </div>
       `).join('');
 
-      const reportLink = lab.id === 'appendix-a' ? 'chatbot.html' : (lab.files[lab.files.length - 1] || 'lab_reports.html');
+      const reportLink = getReportLink(lab);
 
       return `
         <div class="card lab-card" style="display:flex;flex-direction:column;justify-content:space-between;transition:transform 0.2s, border-color 0.2s;">
@@ -337,7 +371,7 @@
       `;
 
       footerEl.innerHTML = `
-        <a href="${lab.id === 'appendix-a' ? 'chatbot.html' : (lab.files[lab.files.length - 1] || 'lab_reports.html')}" class="btn btn-primary btn-sm">
+        <a href="${getReportLink(lab)}" class="btn btn-primary btn-sm">
           <i class="fas fa-external-link-alt"></i> ${lab.id === 'appendix-a' ? 'Go to AI Threat Analyst' : 'Go to Full Chapter Report'}
         </a>
         <button class="btn btn-ghost btn-sm" onclick="hideModal()">Close</button>

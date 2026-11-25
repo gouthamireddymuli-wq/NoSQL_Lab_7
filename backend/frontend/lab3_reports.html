@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CTI Platform — Lab 3: Document Modeling (Embedding vs Referencing)</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <div style="display:flex;align-items:center;">
+    <button id="sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar"><i class="fas fa-bars"></i></button>
+    <div class="navbar-brand"><i class="fas fa-shield-virus"></i> CTI Platform <span class="brand-dot"></span></div>
+  </div>
+  <ul class="navbar-nav">
+    <li><a href="index.html"><i class="fas fa-th-large"></i> Dashboard</a></li>
+    <li><a href="indicators.html"><i class="fas fa-crosshairs"></i> Indicators</a></li>
+    <li><a href="reports.html"><i class="fas fa-file-alt"></i> Reports</a></li>
+    <li><a href="actors.html"><i class="fas fa-user-secret"></i> Threat Actors</a></li>
+    <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+    <li><a href="labs.html" class="active"><i class="fas fa-book-open"></i> Labs Portal</a></li>
+    <li><a href="chatbot.html"><i class="fas fa-robot"></i> AI Threat Analyst</a></li>
+  </ul>
+  <div class="navbar-status"><div class="status-indicator"></div><span>Live</span></div>
+</nav>
+
+<div class="app-layout">
+  <aside id="app-sidebar" class="sidebar"></aside>
+
+  <main class="main-content">
+    <div class="page-wrapper" style="max-width:1200px;">
+      
+      <div class="page-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+            <span class="badge badge-purple">Chapter 3</span>
+            <span class="badge badge-low"><i class="fas fa-check-circle"></i> Data Modeling</span>
+          </div>
+          <h1 class="page-title"><i class="fas fa-sitemap"></i> Lab 3: Document Modeling Principles: Embedding vs Referencing</h1>
+          <p class="page-subtitle">1:Few embedded subdocuments, N:M normalized references, JSON Schema validation, and preventing unbounded array growth.</p>
+        </div>
+        <div style="text-align:right;">
+          <a href="reports/Lab_Experiments_Report_Chapters_1_18.pdf" target="_blank" class="btn btn-outline btn-sm">
+            <i class="fas fa-file-pdf" style="color:var(--accent-red);"></i> Download Chapter 3 PDF
+          </a>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.35rem;">
+            Student: <strong>M Gouthami</strong> (<span style="font-family:var(--font-mono);color:var(--accent-cyan);">24BTRCL130</span>)
+          </div>
+        </div>
+      </div>
+
+      <!-- Core Theory Card -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <h3 style="font-size:1.1rem;color:var(--accent-cyan);margin-bottom:0.75rem;">
+          <i class="fas fa-balance-scale"></i> 1. Embedding vs Referencing Decision Framework
+        </h3>
+        <p style="font-size:0.88rem;color:#cbd5e1;line-height:1.6;margin-bottom:1rem;">
+          The fundamental rule of MongoDB data modeling is: <em>Data that is accessed together should be stored together.</em> However, unbounded array growth can violate MongoDB's 16 MB maximum document size limit.
+        </p>
+
+        <div class="grid-2">
+          <div style="background:rgba(0,0,0,0.3);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--card-border);">
+            <h4 style="color:var(--accent-green);font-size:0.9rem;margin-bottom:0.5rem;"><i class="fas fa-check-circle"></i> When to EMBED (Denormalize)</h4>
+            <ul style="padding-left:1.2rem;font-size:0.82rem;color:#cbd5e1;line-height:1.7;">
+              <li><strong>1:1 Relationships:</strong> Threat report metadata, primary author details.</li>
+              <li><strong>1:Few Relationships (&lt; 20 items):</strong> MITRE ATT&amp;CK technique tags, affected CVE IDs.</li>
+              <li><strong>Atomic Updates:</strong> Need to update parent and child attributes in a single atomic disk write.</li>
+              <li><strong>High Read Throughput:</strong> Avoids application-level roundtrips or <code>$lookup</code> joins.</li>
+            </ul>
+          </div>
+          <div style="background:rgba(0,0,0,0.3);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--card-border);">
+            <h4 style="color:var(--accent-cyan);font-size:0.9rem;margin-bottom:0.5rem;"><i class="fas fa-link"></i> When to REFERENCE (Normalize)</h4>
+            <ul style="padding-left:1.2rem;font-size:0.82rem;color:#cbd5e1;line-height:1.7;">
+              <li><strong>1:Squillions:</strong> Continuous firewall packet logs or IoT sensor telemetry.</li>
+              <li><strong>Many-to-Many (N:M):</strong> Threat Actors operating across thousands of dynamic IP observables.</li>
+              <li><strong>Independent Lifecycles:</strong> Entities updated frequently by independent pipelines.</li>
+              <li><strong>Prevent 16 MB Cap Exceeded:</strong> Eliminates runaway unbounded array anti-patterns.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- JSON Schema Enforcement -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <h3 style="font-size:1.1rem;color:var(--accent-cyan);margin-bottom:0.75rem;">
+          <i class="fas fa-shield-alt"></i> 2. Server-Side Integrity via $jsonSchema Validation
+        </h3>
+        <pre style="background:#050811;padding:0.75rem;border-radius:4px;color:#38bdf8;font-size:0.75rem;overflow-x:auto;"><code>db.create_collection("threat_indicators", validator={
+    "$jsonSchema": {
+        "bsonType": "object",
+        "required": ["type", "value", "confidence", "platform"],
+        "properties": {
+            "type": {"enum": ["ip", "domain", "sha256", "cve", "url"]},
+            "value": {"bsonType": "string"},
+            "confidence": {"bsonType": "int", "minimum": 0, "maximum": 100},
+            "platform": {"enum": ["Linux", "Windows", "MacOS", "Android", "iOS", "Cloud"]}
+        }
+    }
+})</code></pre>
+      </div>
+
+      <!-- Interactive Live Simulation Panel -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+          <div>
+            <h3 style="font-size:1.1rem;color:var(--accent-cyan);">
+              <i class="fas fa-terminal"></i> 3. Interactive Server-Side Simulator: Lab 3
+            </h3>
+            <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;">Evaluate document size calculations and schema validation enforcement.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="runLab3Simulation()"><i class="fas fa-play"></i> Run Simulation</button>
+        </div>
+
+        <div id="sim-output" style="background:#050811;border:1px solid var(--card-border);border-radius:4px;padding:1rem;color:#38bdf8;font-family:var(--font-mono);font-size:0.8rem;max-height:260px;overflow-y:auto;">
+          Click "Run Simulation" to execute the Lab 3 document modeling simulator.
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script type="module">
+  import { initSidebar } from './js/sidebar.js';
+  import { showToast, escHtml } from './js/utils.js';
+  initSidebar();
+
+  window.runLab3Simulation = async function() {
+    const box = document.getElementById("sim-output");
+    box.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Validating embedding vs referencing trade-offs...`;
+    try {
+      const res = await fetch("/api/labs/simulate/lab-3", { method: "POST" });
+      const data = await res.json();
+      box.innerHTML = `<pre style="margin:0;"><code>${escHtml(JSON.stringify(data, null, 2))}</code></pre>`;
+      showToast("Lab 3 simulation completed!");
+    } catch (e) {
+      box.innerHTML = `<span style="color:var(--accent-red);">Simulation error: ${e.message}</span>`;
+    }
+  };
+</script>
+<script src="js/floating_chat.js"></script>
+</body>
+</html>

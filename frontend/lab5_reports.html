@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CTI Platform — Lab 5: Aggregation Analytics &amp; Pipelines</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <div style="display:flex;align-items:center;">
+    <button id="sidebar-toggle" class="sidebar-toggle-btn" title="Toggle Sidebar"><i class="fas fa-bars"></i></button>
+    <div class="navbar-brand"><i class="fas fa-shield-virus"></i> CTI Platform <span class="brand-dot"></span></div>
+  </div>
+  <ul class="navbar-nav">
+    <li><a href="index.html"><i class="fas fa-th-large"></i> Dashboard</a></li>
+    <li><a href="indicators.html"><i class="fas fa-crosshairs"></i> Indicators</a></li>
+    <li><a href="reports.html"><i class="fas fa-file-alt"></i> Reports</a></li>
+    <li><a href="actors.html"><i class="fas fa-user-secret"></i> Threat Actors</a></li>
+    <li><a href="analytics.html"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+    <li><a href="labs.html" class="active"><i class="fas fa-book-open"></i> Labs Portal</a></li>
+    <li><a href="chatbot.html"><i class="fas fa-robot"></i> AI Threat Analyst</a></li>
+  </ul>
+  <div class="navbar-status"><div class="status-indicator"></div><span>Live</span></div>
+</nav>
+
+<div class="app-layout">
+  <aside id="app-sidebar" class="sidebar"></aside>
+
+  <main class="main-content">
+    <div class="page-wrapper" style="max-width:1200px;">
+      
+      <div class="page-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+            <span class="badge badge-purple">Chapter 5</span>
+            <span class="badge badge-low"><i class="fas fa-check-circle"></i> Aggregations</span>
+          </div>
+          <h1 class="page-title"><i class="fas fa-chart-pie"></i> Lab 5: Aggregation Framework &amp; Threat Analytics</h1>
+          <p class="page-subtitle">Multi-stage pipeline execution: relational joins ($lookup), array reshaping ($unwind), grouped analytics, and parallel multifaceted computation ($facet).</p>
+        </div>
+        <div style="text-align:right;">
+          <a href="reports/Lab_Experiments_Report_Chapters_1_18.pdf" target="_blank" class="btn btn-outline btn-sm">
+            <i class="fas fa-file-pdf" style="color:var(--accent-red);"></i> Download Chapter 5 PDF
+          </a>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:0.35rem;">
+            Student: <strong>M Gouthami</strong> (<span style="font-family:var(--font-mono);color:var(--accent-cyan);">24BTRCL130</span>)
+          </div>
+        </div>
+      </div>
+
+      <!-- Core Theory Card -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <h3 style="font-size:1.1rem;color:var(--accent-cyan);margin-bottom:0.75rem;">
+          <i class="fas fa-stream"></i> 1. The Multi-Stage Aggregation Pipeline Architecture
+        </h3>
+        <p style="font-size:0.88rem;color:#cbd5e1;line-height:1.6;margin-bottom:1rem;">
+          MongoDB's aggregation framework models data transformations as an assembly line. Documents enter through stage 1 and each stage transforms the stream before passing it to subsequent stages, enabling analytical queries without transporting raw datasets over the network.
+        </p>
+
+        <div class="grid-2">
+          <div style="background:rgba(0,0,0,0.3);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--card-border);">
+            <h4 style="color:var(--accent-cyan);font-size:0.9rem;margin-bottom:0.5rem;"><i class="fas fa-layer-group"></i> Essential Pipeline Stages</h4>
+            <ul style="padding-left:1.2rem;font-size:0.82rem;color:#cbd5e1;line-height:1.7;">
+              <li><code>$match</code>: Filters the working set early to utilize available indexes and reduce memory consumption.</li>
+              <li><code>$lookup</code>: Performs left outer equijoins to correlate indicators with threat actor dossiers.</li>
+              <li><code>$unwind</code>: Deconstructs an array field from the input documents to output a document for each element.</li>
+              <li><code>$group</code>: Groups documents by specified identifier expression and applies accumulator expressions.</li>
+            </ul>
+          </div>
+          <div style="background:rgba(0,0,0,0.3);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--card-border);">
+            <h4 style="color:var(--accent-green);font-size:0.9rem;margin-bottom:0.5rem;"><i class="fas fa-project-diagram"></i> Parallel Analytics via $facet</h4>
+            <p style="font-size:0.82rem;color:#cbd5e1;line-height:1.6;margin-bottom:0.5rem;">
+              <code>$facet</code> processes multiple aggregation sub-pipelines in parallel within a single pipeline stage on the same input documents, returning multiple aggregated views (e.g. platform breakdown + severity breakdown + top 5 actors) in a single database round-trip.
+            </p>
+            <span class="badge badge-low">allowDiskUse=True</span> <span style="font-size:0.75rem;color:var(--text-muted);">bypasses 100 MB RAM stage cap</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pipeline Code Example -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <h3 style="font-size:1.1rem;color:var(--accent-cyan);margin-bottom:0.75rem;">
+          <i class="fas fa-code"></i> 2. Threat Actor Correlation Pipeline with $lookup &amp; $facet
+        </h3>
+        <pre style="background:#050811;padding:0.75rem;border-radius:4px;color:#38bdf8;font-size:0.75rem;overflow-x:auto;"><code>pipeline = [
+    {"$match": {"status": "Active"}},
+    {"$lookup": {
+        "from": "threat_actors",
+        "localField": "actor_id",
+        "foreignField": "_id",
+        "as": "actor_dossier"
+    }},
+    {"$unwind": "$actor_dossier"},
+    {"$facet": {
+        "by_platform": [{"$group": {"_id": "$platform", "count": {"$sum": 1}}}],
+        "by_severity": [{"$group": {"_id": "$severity", "avg_confidence": {"$avg": "$confidence"}}}],
+        "top_actors": [{"$group": {"_id": "$actor_dossier.name", "total_iocs": {"$sum": 1}}}, {"$sort": {"total_iocs": -1}}, {"$limit": 5}]
+    }}
+]
+analytics_results = db.indicators.aggregate(pipeline, allowDiskUse=True)</code></pre>
+      </div>
+
+      <!-- Interactive Live Simulation Panel -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+          <div>
+            <h3 style="font-size:1.1rem;color:var(--accent-cyan);">
+              <i class="fas fa-terminal"></i> 3. Interactive Server-Side Simulator: Lab 5
+            </h3>
+            <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;">Execute live aggregation pipeline and multifaceted analytical computations.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="runLab5Simulation()"><i class="fas fa-play"></i> Run Simulation</button>
+        </div>
+
+        <div id="sim-output" style="background:#050811;border:1px solid var(--card-border);border-radius:4px;padding:1rem;color:#38bdf8;font-family:var(--font-mono);font-size:0.8rem;max-height:260px;overflow-y:auto;">
+          Click "Run Simulation" to execute the Lab 5 aggregation analytics pipeline.
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div id="toast-container"></div>
+<script type="module">
+  import { initSidebar } from './js/sidebar.js';
+  import { showToast, escHtml } from './js/utils.js';
+  initSidebar();
+
+  window.runLab5Simulation = async function() {
+    const box = document.getElementById("sim-output");
+    box.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Executing aggregation analytics pipeline...`;
+    try {
+      const res = await fetch("/api/labs/simulate/lab-5", { method: "POST" });
+      const data = await res.json();
+      box.innerHTML = `<pre style="margin:0;"><code>${escHtml(JSON.stringify(data, null, 2))}</code></pre>`;
+      showToast("Lab 5 simulation completed!");
+    } catch (e) {
+      box.innerHTML = `<span style="color:var(--accent-red);">Simulation error: ${e.message}</span>`;
+    }
+  };
+</script>
+<script src="js/floating_chat.js"></script>
+</body>
+</html>

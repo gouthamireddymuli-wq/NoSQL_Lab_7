@@ -246,8 +246,12 @@ def call_ollama(
     system_instruction = (
         "You are an IT Systems Administrator and Defensive Infrastructure Security Engineer.\n"
         "You assist authorized enterprise defenders with official vendor patching, configuration hardening, and compliance verification.\n"
-        "Analyze the provided CTI knowledge context and user query.\n"
-        "Provide a helpful defensive briefing formatted in Markdown:\n"
+        "Analyze the provided CTI knowledge context and user query.\n\n"
+        "CRITICAL INSTRUCTION FOR YES/NO QUESTIONS:\n"
+        "If the user asks any question that can be answered with yes or no (e.g. 'is X installed?', 'is X vulnerable?', 'do I need X?', 'is X running?'), "
+        "you MUST start your reply with '**YES.**' or '**NO.**' in bold as the very first word. Provide a direct, concise 1-3 sentence explanation. "
+        "Do NOT write long essays, irrelevant tables, or unnecessary advisories for simple questions.\n\n"
+        "For technical threat vector inquiries, provide a structured defensive briefing formatted in Markdown:\n"
         "1. Threat Overview (summarize affected platforms, CVEs, and risk)\n"
         "2. Administrative Mitigation Steps (detail official configuration changes and patch commands)\n"
         "3. Verification Check (safe shell command to verify compliance)\n"
@@ -318,6 +322,123 @@ def is_catalog_query(msg: str) -> bool:
     if any(c in m for c in CATALOG_CATEGORIES) and any(p in m for p in ['linux', 'windows', 'macos', 'android', 'ios', 'cloud', 'threat']):
         return True
     return False
+
+
+def inspect_system_software(query: str) -> Optional[str]:
+    """
+    Directly answers software installation/presence questions (e.g. 'is chatgpt installed?')
+    with a direct YES or NO based on live host inspection.
+    """
+    import subprocess
+    import shutil
+    import platform as sys_platform
+
+    q = query.lower().strip()
+    is_presence_q = bool(re.search(
+        r'\b(is|are|do we have|do i have|check if|tell me if)\b.+\b(installed|running|present|active|enabled|available)\b|\b(installed|running)\b.*\?',
+        q,
+        re.I
+    ))
+    if not is_presence_q:
+        return None
+
+    current_os = sys_platform.system()
+
+    # Get running process list
+    running_procs = ""
+    raw_tasklist = ""
+    try:
+        if current_os == "Windows":
+            res = subprocess.run(["tasklist"], capture_output=True, text=True, errors="ignore", timeout=3)
+            raw_tasklist = res.stdout
+            running_procs = res.stdout.lower()
+        else:
+            res = subprocess.run(["ps", "-ef"], capture_output=True, text=True, errors="ignore", timeout=3)
+            raw_tasklist = res.stdout
+            running_procs = res.stdout.lower()
+    except Exception:
+        pass
+
+    # 1. ChatGPT
+    if "chatgpt" in q or "chat gpt" in q:
+        is_running = "chatgpt" in running_procs
+        cli_path = shutil.which("chatgpt")
+        if is_running or cli_path:
+            chatgpt_lines = [l for l in raw_tasklist.splitlines() if "chatgpt" in l.lower()]
+            pids = re.findall(r'(\d+)\s+(?:Console|Services)', "\n".join(chatgpt_lines)) if (current_os == "Windows" and is_running) else []
+            pid_str = f" (PID: {', '.join(pids[:3])})" if pids else ""
+            return (
+                f"**YES.** ChatGPT is installed and currently running on this system.\n\n"
+                f"- **Application:** ChatGPT Desktop (`ChatGPT Classic`){pid_str}\n"
+                f"- **Host Platform:** {current_os}\n"
+                f"- **Execution Status:** Active / Running"
+            )
+        return "**NO.** ChatGPT is not detected as an installed application or running service on this system."
+
+    # 2. Ollama
+    if "ollama" in q:
+        st = check_ollama()
+        if st.get("status") == "connected":
+            models = ", ".join(st.get("models", [])) or "llama3.2:1b"
+            return (
+                f"**YES.** Ollama is installed and actively running on this system.\n\n"
+                f"- **Service Endpoint:** `{st.get('base_url')}`\n"
+                f"- **Active Model(s):** `{models}`\n"
+                f"- **Execution Status:** Connected & Ready"
+            )
+        elif shutil.which("ollama") or "ollama" in running_procs:
+            return "**YES.** Ollama is installed on this system (service is currently idle; start it with `ollama serve`)."
+        return "**NO.** Ollama is not installed or accessible on this system."
+
+    # 3. MongoDB
+    if "mongo" in q:
+        try:
+            db = get_db()
+            db.command("ping")
+            return (
+                f"**YES.** MongoDB is installed and actively running on this system.\n\n"
+                f"- **Database Host:** `mongodb://localhost:27017`\n"
+                f"- **Target Database:** `{MONGO_DB}`\n"
+                f"- **Execution Status:** Connected & Ready"
+            )
+        except Exception:
+            if shutil.which("mongod") or shutil.which("mongosh") or "mongod" in running_procs:
+                return "**YES.** MongoDB is installed on this system (service is currently paused)."
+            return "**NO.** MongoDB is not detected as running on port 27017."
+
+    # 4. Docker
+    if "docker" in q:
+        docker_cli = shutil.which("docker")
+        if docker_cli or "docker" in running_procs:
+            return (
+                f"**YES.** Docker is installed and running on this system.\n\n"
+                f"- **CLI Binary:** `{docker_cli or 'docker'}`\n"
+                f"- **Platform:** Docker Desktop ({current_os})\n"
+                f"- **Execution Status:** Active"
+            )
+        return "**NO.** Docker is not installed or detected on this system."
+
+    # 5. Python
+    if "python" in q:
+        import sys
+        return (
+            f"**YES.** Python is installed on this system.\n\n"
+            f"- **Version:** Python {sys.version.split()[0]}\n"
+            f"- **Executable:** `{sys.executable}`"
+        )
+
+    # 6. Generic executable check (e.g. 'is git installed?', 'is curl installed?')
+    target_match = re.search(r'\b(is|check if)\s+([a-zA-Z0-9_\-\.]+)\s+installed', q)
+    if target_match:
+        app_name = target_match.group(2).lower()
+        if app_name not in ["the", "a", "an", "this", "it"]:
+            loc = shutil.which(app_name)
+            is_run = app_name in running_procs
+            if loc or is_run:
+                return f"**YES.** `{app_name}` is installed on this system." + (f" (Location: `{loc}`)" if loc else "")
+            return f"**NO.** `{app_name}` is not installed or found in PATH on this system."
+
+    return None
 
 
 def builtin_general_security_responder(query: str, platform: Optional[str] = None) -> str:
@@ -642,94 +763,109 @@ def execute_chat(
     response_text = ""
     engine_used = "Built-in CTI Engine"
 
-    # Context block for LLM prompt
-    if is_catalog and sources:
-        context_block = "\n\n".join(
-            f"[{s['source']} - Platform: {s['platform']} - Status: {s['status']} - Severity: {s['severity']}]\n{s['text']}"
-            for s in sources
-        )
-        llm_prompt = (
-            f"CTI Knowledge Context:\n{context_block}\n\n"
-            f"User Inquiry: {message}\n"
-            f"Target Platform Filter: {platform or 'Any'}\n"
-            f"Lifecycle Status Filter: {threat_status or 'Any'}"
-        )
+    # 0. Fast-path: Direct Host Software Presence Check (e.g. 'is chatgpt installed?')
+    direct_software_reply = inspect_system_software(message)
+    if direct_software_reply:
+        response_text = direct_software_reply
+        engine_used = "Host System Inspector"
     else:
-        llm_prompt = (
-            f"User Inquiry: {message}\n"
-            f"Target Platform: {platform or 'General'}\n"
-            f"Please provide an authoritative, clear, and comprehensive technical answer with defensive best practices and code or shell commands where applicable."
-        )
-
-    # Attempt Ollama if requested or if in auto/ollama mode
-    if selected_backend in ["ollama", "auto"]:
-        try:
-            response_text, engine_used = call_ollama(
-                llm_prompt,
-                history[-4:],
-                model=model,
-                base_url=ollama_url
+        # Context block for LLM prompt
+        if is_catalog and sources:
+            context_block = "\n\n".join(
+                f"[{s['source']} - Platform: {s['platform']} - Status: {s['status']} - Severity: {s['severity']}]\n{s['text']}"
+                for s in sources
             )
-            # Only augment if it's a catalog threat AND Ollama refused
-            if is_catalog and sources:
-                refusal_patterns = [
-                    "can't provide specific details or guidance on how to mitigate",
-                    "can’t provide specific details or guidance on how to mitigate",
-                    "cannot provide specific details",
-                    "cannot provide guidance on how to mitigate",
-                    "i cannot provide",
-                    "i can't provide",
-                    "i can’t provide",
-                    "illegal or harmful",
-                    "illegal and unethical",
-                    "as an ai"
-                ]
-                has_refusal = any(p in response_text.lower() for p in refusal_patterns)
-                has_commands = "```" in response_text
-                
-                if has_refusal or not has_commands:
-                    # Strip any safety refusal or apology sentences (both straight and curly quotes)
-                    cleaned_text = re.sub(r'I (?:can[\'’]t|cannot) provide [^\.\n]+(?:\.|\n|\?)?', '', response_text, flags=re.IGNORECASE)
-                    cleaned_text = re.sub(r'Is there anything else I can help you with\??', '', cleaned_text, flags=re.IGNORECASE).strip()
-                    top = sources[0]
-                    raw = top.get("raw_threat", {})
-                    title = raw.get("title", top.get("source", "Threat Advisory"))
-                    plat = raw.get("platform", top.get("platform", "Platform"))
-                    mits = raw.get("mitigation_procedures", ["Apply latest vendor security patch.", "Review access control rules."])
-                    script = raw.get("remediation_script", "# Apply vendor update")
-                    verify = raw.get("verification_command", "# Verify patch level")
-
-                    mitigation_block = (
-                        f"\n\n### 🔧 Verified Administrative Mitigation Procedures ({plat})\n"
-                        f"**Target Vector:** `{title}`\n\n" +
-                        "\n".join([f"- **{m}**" if m.startswith("Step") else f"- {m}" for m in mits]) +
-                        f"\n\n#### 💻 Immediate Actionable Remediation Script ({plat})\n```bash\n{script}\n```\n"
-                        f"#### 🔍 Automated Verification Check\n```bash\n{verify}\n```"
-                    )
-                    response_text = (cleaned_text + mitigation_block).strip()
-        except Exception as e:
-            # Fallback to Built-in Engine with notice
-            if is_catalog and sources:
-                fallback_text = builtin_cti_engine(message, sources, requested_platform=platform, requested_status=threat_status)
+            llm_prompt = (
+                f"CTI Knowledge Context:\n{context_block}\n\n"
+                f"User Inquiry: {message}\n"
+                f"Target Platform Filter: {platform or 'Any'}\n"
+                f"Lifecycle Status Filter: {threat_status or 'Any'}"
+            )
+        else:
+            is_yes_no = bool(re.search(r'^(is|are|do|does|can|will|should|has|have)\b|\b(yes or no|installed\?|running\?)\b', message.strip(), re.I))
+            if is_yes_no:
+                llm_prompt = (
+                    f"User Question: {message}\n"
+                    f"Target Platform: {platform or 'General'}\n\n"
+                    f"CRITICAL INSTRUCTION: Begin your response with a direct, bold '**YES.**' or '**NO.**' as the very first word. "
+                    f"Follow with a concise explanation under 3 sentences. Do NOT generate full-length essays, tables, or irrelevant threat templates."
+                )
             else:
-                fallback_text = builtin_general_security_responder(message, platform=platform)
-            response_text = fallback_text
-            engine_used = f"Built-in CTI Engine (Ollama Offline: {str(e)[:60]}...)"
-    elif selected_backend == "openai" and OPENAI_API_KEY:
-        try:
-            response_text, engine_used = call_openai(llm_prompt, history[-4:])
-        except Exception as e:
+                llm_prompt = (
+                    f"User Inquiry: {message}\n"
+                    f"Target Platform: {platform or 'General'}\n"
+                    f"Please provide an authoritative, clear, and comprehensive technical answer with defensive best practices and code or shell commands where applicable."
+                )
+
+        # Attempt Ollama if requested or if in auto/ollama mode
+        if selected_backend in ["ollama", "auto"]:
+            try:
+                response_text, engine_used = call_ollama(
+                    llm_prompt,
+                    history[-4:],
+                    model=model,
+                    base_url=ollama_url
+                )
+                # Only augment if it's a catalog threat AND Ollama refused
+                if is_catalog and sources:
+                    refusal_patterns = [
+                        "can't provide specific details or guidance on how to mitigate",
+                        "can’t provide specific details or guidance on how to mitigate",
+                        "cannot provide specific details",
+                        "cannot provide guidance on how to mitigate",
+                        "i cannot provide",
+                        "i can't provide",
+                        "i can’t provide",
+                        "illegal or harmful",
+                        "illegal and unethical",
+                        "as an ai"
+                    ]
+                    has_refusal = any(p in response_text.lower() for p in refusal_patterns)
+                    has_commands = "```" in response_text
+                    
+                    if has_refusal or not has_commands:
+                        # Strip any safety refusal or apology sentences (both straight and curly quotes)
+                        cleaned_text = re.sub(r'I (?:can[\'’]t|cannot) provide [^\.\n]+(?:\.|\n|\?)?', '', response_text, flags=re.IGNORECASE)
+                        cleaned_text = re.sub(r'Is there anything else I can help you with\??', '', cleaned_text, flags=re.IGNORECASE).strip()
+                        top = sources[0]
+                        raw = top.get("raw_threat", {})
+                        title = raw.get("title", top.get("source", "Threat Advisory"))
+                        plat = raw.get("platform", top.get("platform", "Platform"))
+                        mits = raw.get("mitigation_procedures", ["Apply latest vendor security patch.", "Review access control rules."])
+                        script = raw.get("remediation_script", "# Apply vendor update")
+                        verify = raw.get("verification_command", "# Verify patch level")
+
+                        mitigation_block = (
+                            f"\n\n### 🔧 Verified Administrative Mitigation Procedures ({plat})\n"
+                            f"**Target Vector:** `{title}`\n\n" +
+                            "\n".join([f"- **{m}**" if m.startswith("Step") else f"- {m}" for m in mits]) +
+                            f"\n\n#### 💻 Immediate Actionable Remediation Script ({plat})\n```bash\n{script}\n```\n"
+                            f"#### 🔍 Automated Verification Check\n```bash\n{verify}\n```"
+                        )
+                        response_text = (cleaned_text + mitigation_block).strip()
+            except Exception as e:
+                # Fallback to Built-in Engine with notice
+                if is_catalog and sources:
+                    fallback_text = builtin_cti_engine(message, sources, requested_platform=platform, requested_status=threat_status)
+                else:
+                    fallback_text = builtin_general_security_responder(message, platform=platform)
+                response_text = fallback_text
+                engine_used = f"Built-in CTI Engine (Ollama Offline: {str(e)[:60]}...)"
+        elif selected_backend == "openai" and OPENAI_API_KEY:
+            try:
+                response_text, engine_used = call_openai(llm_prompt, history[-4:])
+            except Exception as e:
+                if is_catalog and sources:
+                    response_text = builtin_cti_engine(message, sources, requested_platform=platform, requested_status=threat_status)
+                else:
+                    response_text = builtin_general_security_responder(message, platform=platform)
+                engine_used = f"Built-in CTI Engine (OpenAI fallback: {e})"
+        else:
             if is_catalog and sources:
                 response_text = builtin_cti_engine(message, sources, requested_platform=platform, requested_status=threat_status)
             else:
                 response_text = builtin_general_security_responder(message, platform=platform)
-            engine_used = f"Built-in CTI Engine (OpenAI fallback: {e})"
-    else:
-        if is_catalog and sources:
-            response_text = builtin_cti_engine(message, sources, requested_platform=platform, requested_status=threat_status)
-        else:
-            response_text = builtin_general_security_responder(message, platform=platform)
-        engine_used = "Built-in CTI Engine"
+            engine_used = "Built-in CTI Engine"
 
     # 4. Save history in MongoDB (Appendix A specification)
     history.append({

@@ -1,4 +1,50 @@
-# NoSQL Lab 7 — Cyber Threat Intelligence Platform
+# NoSQL Lab 7 — Cyber Threat Intelligence Platform (Labs 1–18 & Appendix A)
+
+**Student:** M Gouthami (`24BTRCL130`)  
+**Course:** NoSQL Databases using MongoDB
+
+---
+
+## 🌐 Live Access for Faculty (Click to Open)
+
+- **Live Labs Portal (All 18 Labs + Appendix A):** https://no-sql-lab-7.vercel.app/labs.html
+- **AI Threat Intelligence Chatbot (Appendix A):** https://no-sql-lab-7.vercel.app/chatbot.html
+- **Official Full Lab Report (Chapters 1–18 PDF):** [Lab_Experiments_Report_Chapters_1_18.pdf](frontend/reports/Lab_Experiments_Report_Chapters_1_18.pdf)
+- **Mini-Project LLM Chatbot Report (PDF):** [Mini_Project_Report_LLM_Chatbot.pdf](frontend/reports/Mini_Project_Report_LLM_Chatbot.pdf)
+- **Docker Hub Image:** https://hub.docker.com/r/gouthudocker/nosql-lab-7
+
+### Direct Links to Every Lab (Interactive Report + Simulator)
+
+| Chapter | Lab Title | Live Web Page (Vercel) |
+| :--- | :--- | :--- |
+| Lab 1 | NoSQL Database Families & Application Mapping | https://no-sql-lab-7.vercel.app/lab1_reports.html |
+| Lab 2 | Environment Setup & PyMongo CRUD Essentials | https://no-sql-lab-7.vercel.app/lab2_reports.html |
+| Lab 3 | Document Modeling: Embedding vs Referencing | https://no-sql-lab-7.vercel.app/lab3_reports.html |
+| Lab 4 | Advanced CRUD Operations, Filters & Bulk Upserts | https://no-sql-lab-7.vercel.app/lab4_reports.html |
+| Lab 5 | Aggregation Framework & Threat Analytics | https://no-sql-lab-7.vercel.app/lab5_reports.html |
+| Lab 6 | Indexing Design, ESR Rule & Explain Plans | https://no-sql-lab-7.vercel.app/lab6_reports.html |
+| Lab 7 | Production Schema & Working Set Analysis | https://no-sql-lab-7.vercel.app/lab_reports.html |
+| Lab 8 | Replica Sets & High Availability Failover | https://no-sql-lab-7.vercel.app/lab8_reports.html |
+| Lab 9 | CAP Theorem & Write Concerns | https://no-sql-lab-7.vercel.app/lab9_reports.html |
+| Lab 10 | Multi-Document ACID Transactions | https://no-sql-lab-7.vercel.app/lab10_reports.html |
+| Lab 11 | Sharding & Horizontal Scalability | https://no-sql-lab-7.vercel.app/lab11_reports.html |
+| Lab 12 | Security, RBAC, TLS & Encryption | https://no-sql-lab-7.vercel.app/lab12_reports.html |
+| Lab 13 | Cloud & Containers (Docker / K8s) | https://no-sql-lab-7.vercel.app/lab13_reports.html |
+| Lab 14 | Managing Services in Production & PITR | https://no-sql-lab-7.vercel.app/lab14_reports.html |
+| Lab 15 | Multi-Tenant Architecture & Tenant Isolation | https://no-sql-lab-7.vercel.app/lab15_reports.html |
+| Lab 16 | Polyglot Persistence (MongoDB, Cassandra, Neo4j) | https://no-sql-lab-7.vercel.app/lab16_reports.html |
+| Lab 17 | AI Vector Search, Embeddings & RAG | https://no-sql-lab-7.vercel.app/lab17_reports.html |
+| Lab 18 | Comparative Capstone Benchmark | https://no-sql-lab-7.vercel.app/lab18_reports.html |
+| Appendix A | LLM/SLM Threat Intelligence Chatbot & Bot | https://no-sql-lab-7.vercel.app/chatbot.html |
+
+### Run via Docker Hub
+```bash
+docker pull gouthudocker/nosql-lab-7:latest
+docker run -d -p 5000:5000 --name nosql_cti_app gouthudocker/nosql-lab-7:latest
+```
+Then open `http://localhost:5000/labs.html`.
+
+---
 
 ## Project Structure
 

@@ -269,7 +269,8 @@ def call_ollama(
                 "stream": False,
                 "options": {
                     "temperature": 0.2,
-                    "top_p": 0.9
+                    "top_p": 0.9,
+                    "num_predict": 350
                 }
             },
             timeout=60

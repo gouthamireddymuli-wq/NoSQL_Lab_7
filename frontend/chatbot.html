@@ -501,6 +501,20 @@
     sendBtn.disabled = true;
     sendBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
 
+    // Show temporary typing indicator
+    const container = document.getElementById("chat-messages");
+    const typingBubble = document.createElement("div");
+    typingBubble.className = "msg-bubble msg-assistant";
+    typingBubble.id = "msg-typing-indicator";
+    typingBubble.innerHTML = `
+      <div style="display:flex;align-items:center;gap:0.6rem;color:var(--text-muted);font-size:0.85rem;">
+        <i class="fas fa-brain fa-spin" style="color:#c084fc;"></i>
+        <span>AI Analyst is querying Ollama SLM &amp; MongoDB Vector RAG...</span>
+      </div>
+    `;
+    container.appendChild(typingBubble);
+    container.scrollTop = container.scrollHeight;
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -517,11 +531,13 @@
         })
       });
       const data = await res.json();
+      typingBubble.remove();
       appendAssistantMessage(data);
       updateScannerStatus();
     } catch (err) {
+      typingBubble.remove();
       appendAssistantMessage({
-        response: `⚠️ Error contacting CTI Assistant: ${err.message}`,
+        response: `⚠️ **Connection Interrupted (${err.message})**<br/>The local server connection dropped or timed out. Please check that the local server is running on port 5000 and try again.`,
         sources: []
       });
     } finally {

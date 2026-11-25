@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: nosql_lab7_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - lab7_mongo_data:/data/db
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gouthudocker/nosql-lab-7:latest
+    container_name: nosql_lab7_web
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongo:27017/
+      - MONGO_DB=cti_platform
+      - LLM_BACKEND=ollama
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=llama3.2:1b
+    depends_on:
+      - mongo
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  lab7_mongo_data:
